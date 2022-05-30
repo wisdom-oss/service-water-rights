@@ -39,6 +39,7 @@ def get_last_schema_update(schema_name: str, engine: sqlalchemy.engine.Engine) -
         f"LIMIT 1"
     )
     result = engine.execute(query).all()
-    if result is None:
+    print(result)
+    if not result:
         return datetime.datetime.now(tz=tzlocal.get_localzone())
     return datetime.datetime.fromtimestamp(result[0], tz=tzlocal.get_localzone())
