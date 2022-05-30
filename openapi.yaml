@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: Water Right Location Service
+  description: Water Right Location Service
+  version: 1.0.0
+servers:
+  - url: '/api/water-rights/location'
+components:
+  schemas:
+    Point3D:
+      type: array
+      description: Point in 3D space
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id2
+      minItems: 2
+      maxItems: 3
+      items:
+        type: number
+    Geometry:
+      type: object
+      description: GeoJSon geometry
+      required:
+        - type
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#geometry-objects
+      properties:
+        type:
+          type: string
+          enum:
+            - Point
+          description: the geometry type
+    Point:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Geometry"
+        - properties:
+            coordinates:
+              $ref: "#/components/schemas/Point3D"
+
+paths:
+  /:
+    get:
+      description: Get water right locations
+      summary: Get water right locations
+      responses:
+        200:
+          description: The query returns at least one location
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      description: The internal ID of the water right
+                      type: integer
+                    water_right:
+                      description: The water right number used by Cadenza
+                      type: integer
+                    active:
+                      description: The status of the water right
+                      type: boolean
+                    real:
+                      description: The type of the water right
+                      type: boolean
+                    geojson:
+                      $ref: "#/components/schemas/Point"
+        204:
+          description: The filters did not match any location (No content)

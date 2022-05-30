@@ -2,23 +2,27 @@
 import datetime
 import email.utils
 import hashlib
-import logging
+import http
 import typing
 
 import amqp_rpc_client
 import fastapi
+import geoalchemy2.functions
+import orjson
 import py_eureka_client.eureka_client
 import pytz as pytz
 import sqlalchemy.exc
-import ujson
+import sqlalchemy.dialects
+import starlette.middleware.gzip
+
 import api.handler
 import configuration
 import database
+import database.tables
 import exceptions
 import models.internal
 import tools
 from api import security
-
 
 # %% Global Clients
 _amqp_client: typing.Optional[amqp_rpc_client.Client] = None
@@ -29,6 +33,7 @@ service = fastapi.FastAPI()
 service.add_exception_handler(exceptions.APIException, api.handler.handle_api_error)
 service.add_exception_handler(fastapi.exceptions.RequestValidationError, api.handler.handle_request_validation_error)
 service.add_exception_handler(sqlalchemy.exc.IntegrityError, api.handler.handle_integrity_error)
+service.add_middleware(starlette.middleware.gzip.GZipMiddleware, minimum_size=1)
 
 # %% Configurations
 _security_configuration = configuration.SecurityConfiguration()
@@ -67,9 +72,9 @@ async def etag_comparison(request: fastapi.Request, call_next):
         "request_path": path,
         "request_query_parameter": query_parameter,
     }
-    query_data = ujson.dumps(query_dict, ensure_ascii=False, sort_keys=True)
+    query_data = orjson.dumps(query_dict, option=orjson.OPT_SORT_KEYS)
     # Now create a hashsum of the query data
-    query_hash = hashlib.sha3_256(query_data.encode("utf-8")).hexdigest()
+    query_hash = hashlib.sha3_256(query_data).hexdigest()
     # Now access the headers of the request and check for the If-None-Match Header
     if_none_match_value = request.headers.get("If-None-Match")
     if_modified_since_value = request.headers.get("If-Modified-Since")
@@ -90,26 +95,89 @@ async def etag_comparison(request: fastapi.Request, call_next):
         return response
 
 
-# %% Routes | TODO: Implement own routes
-@service.get("/hello")
-async def hello_world():
-    return "Hello World"
-
-
-@service.get("/authorized_hello")
-async def authorized_hello(
-    user: typing.Union[models.internal.UserAccount, bool] = fastapi.Security(security.is_authorized_user, scopes=None)
+# %% Routes
+@service.get("/")
+async def get(
+    in_area: None | list[str] = fastapi.Query(default=None, alias="in"),
+    is_active: None | bool = fastapi.Query(default=None, alias="is_active"),
+    is_real: None | bool = fastapi.Query(default=None, alias="is_real"),
+    user: models.internal.UserAccount
+    | bool = fastapi.Security(security.is_authorized_user, scopes=[_security_configuration.scope_string_value]),
 ):
-    return f"Hello {user.first_name} {user.last_name}"
+    # Build a tuple with the available parameter
+    available_parameter = (in_area is not None, is_active is not None, is_real is not None)
+    # the columns which are queried
+    query_columns = [
+        database.tables.locations.c.id,
+        database.tables.locations.c.water_right,
+        database.tables.locations.c.active,
+        database.tables.locations.c.real,
+        sqlalchemy.cast(
+            geoalchemy2.functions.ST_AsGeoJSON(
+                geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4326)
+            ),
+            sqlalchemy.dialects.postgresql.JSONB,
+        ).label("geojson"),
+    ]
+    match available_parameter:
+        case (False, False, False):
+            location_filter = None
+        case (False, False, True):
+            location_filter = (
+                sqlalchemy.or_(database.tables.locations.c.real == is_real, database.tables.locations.c.real == None),
+            )
 
-
-@service.get("/scoped_hello")
-async def scoped_hello(
-    user: typing.Union[models.internal.UserAccount, bool] = fastapi.Security(
-        security.is_authorized_user, scopes=[_security_configuration.scope_string_value]
-    )
-):
-    return (
-        f'Hello {user.first_name} {user.last_name}. You have the required scope "'
-        f'{_security_configuration.scope_string_value}" to access this service'
-    )
+        case (False, True, False):
+            location_filter = sqlalchemy.or_(
+                database.tables.locations.c.active == is_active, database.tables.locations.c.active == None
+            )
+        case (True, False, False):
+            location_filter = (
+                geoalchemy2.functions.ST_Contains(
+                    sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
+                    geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
+                ),
+            )
+        case (False, True, True):
+            location_filter = sqlalchemy.and_(
+                sqlalchemy.or_(database.tables.locations.c.real == is_real, database.tables.locations.c.real == None),
+                sqlalchemy.or_(
+                    database.tables.locations.c.active == is_active, database.tables.locations.c.active == None
+                ),
+            )
+        case (True, False, True):
+            location_filter = sqlalchemy.and_(
+                sqlalchemy.or_(database.tables.locations.c.real == is_real, database.tables.locations.c.real == None),
+                geoalchemy2.functions.ST_Contains(
+                    sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
+                    geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
+                ),
+            )
+        case (True, True, False):
+            location_filter = sqlalchemy.and_(
+                sqlalchemy.or_(
+                    database.tables.locations.c.active == is_active, database.tables.locations.c.active == None
+                ),
+                geoalchemy2.functions.ST_Contains(
+                    sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
+                    geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
+                ),
+            )
+        case (True, True, True):
+            location_filter = sqlalchemy.and_(
+                sqlalchemy.or_(database.tables.locations.c.real == is_real, database.tables.locations.c.real == None),
+                sqlalchemy.or_(
+                    database.tables.locations.c.active == is_active, database.tables.locations.c.active == None
+                ),
+                geoalchemy2.functions.ST_Contains(
+                    sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
+                    geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
+                ),
+            )
+        case _:
+            location_filter = None
+    location_query = sqlalchemy.select(query_columns, location_filter)
+    locations = database.engine.execute(location_query).all()
+    if len(locations) == 0:
+        return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT)
+    return locations
