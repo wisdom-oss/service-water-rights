@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/wisdom-oss/documentation/main/schemas/service-scope.schema.json",
+  "name": "Water Rights Access",
+  "description": "This scope allows access to the water rights currently in the database",
+  "scopeStringValue": "water-rights"
+}
