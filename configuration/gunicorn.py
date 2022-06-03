@@ -26,7 +26,7 @@ timeout = 0
 _service_registry_client: typing.Optional[py_eureka_client.eureka_client.EurekaClient] = None
 
 
-async def on_starting(server):
+def on_starting(server):
     _service_configuration = configuration.ServiceConfiguration()
     logging.basicConfig(
         format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S %z"
@@ -47,6 +47,7 @@ async def on_starting(server):
             host=_service_registry_configuration.host, port=_service_registry_configuration.port, timeout=10
         )
     )
+
     if not _registry_available:
         logging.critical(
             "The service registry is not reachable. Therefore, this service is unable to register "
@@ -61,11 +62,11 @@ async def on_starting(server):
         instance_port=_service_configuration.http_port,
         should_register=True,
         should_discover=False,
-        renewal_interval_in_secs=5,
-        duration_in_secs=30,
+        renewal_interval_in_secs=1,
+        duration_in_secs=5,
     )
-    await _service_registry_client.start()
-    await _service_registry_client.status_update("STARTING")
+    asyncio.run(_service_registry_client.start())
+    asyncio.run(_service_registry_client.status_update("STARTING"))
     # %% Validate the AMQP configuration and message broker reachability
     try:
         _amqp_configuration = configuration.AMQPConfiguration()
@@ -75,6 +76,7 @@ async def on_starting(server):
             "the documentation for further instructions: "
             "AMQP_CONFIGURATION_INVALID"
         )
+        asyncio.run(_service_registry_client.stop())
         sys.exit(1)
     _amqp_configuration.dsn.port = 5672 if _amqp_configuration.dsn.port is None else int(_amqp_configuration.dsn.port)
     _message_broker_reachable = asyncio.run(
@@ -89,14 +91,17 @@ async def on_starting(server):
     # %% Check if the configured service scope is available
     # Create an amqp client
     _amqp_client = amqp_rpc_client.Client(amqp_dsn=_amqp_configuration.dsn, mute_pika=True)
-    # TODO: Create scope configuration "scope.json" in "configuration" folder
     service_scope = models.internal.ServiceScope.parse_file("./configuration/scope.json")
     # Query if the scope already exists
     _scope_check_request = models.amqp.CheckScopeRequest(value=service_scope.value)
     _scope_check_request_id = _amqp_client.send(
-        _scope_check_request.json(), _amqp_configuration.authorization_exchange, "authorization-service"
+        _scope_check_request.json(by_alias=True), _amqp_configuration.authorization_exchange, "authorization-service"
     )
-    _scope_check_response_bytes = _amqp_client.await_response(_scope_check_request_id)
+    _scope_check_response_bytes = _amqp_client.await_response(_scope_check_request_id, 15)
+    if _scope_check_response_bytes is None:
+        logging.critical("Unable to communicate with the authorization service")
+        asyncio.run(_service_registry_client.stop())
+        sys.exit(1)
     _scope_check_response: dict = orjson.loads(_scope_check_response_bytes)
     # Check if the scope check response contains any of the known error keys
     if set(_scope_check_response.keys()).issubset({"httpCode", "httpError", "error", "errorName", "errorDescription"}):
@@ -105,9 +110,9 @@ async def on_starting(server):
             name=service_scope.name, description=service_scope.description, value=service_scope.value
         )
         _scope_create_request_id = _amqp_client.send(
-            _scope_create_request.json(), _amqp_configuration.authorization_exchange
+            _scope_create_request.json(), _amqp_configuration.authorization_exchange, "authorization-service"
         )
-        _scope_create_response_bytes = _amqp_client.await_response(_scope_create_request_id)
+        _scope_create_response_bytes = _amqp_client.await_response(_scope_create_request_id, 10)
         _scope_create_response: dict = orjson.loads(_scope_create_response_bytes)
         if set(_scope_create_response.keys()).issubset(
             {"httpCode", "httpError", "error", "errorName", "errorDescription"}
@@ -146,9 +151,9 @@ async def on_starting(server):
         sys.exit(2)
 
 
-async def when_ready(server):
-    await _service_registry_client.status_update("UP")
+def when_ready(server):
+    asyncio.run(_service_registry_client.status_update("UP"))
 
 
-async def on_exit(server):
-    await _service_registry_client.stop()
+def on_exit(server):
+    asyncio.run(_service_registry_client.stop())
