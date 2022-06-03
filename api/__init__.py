@@ -123,20 +123,17 @@ async def get(
         case (False, False, False):
             location_filter = None
         case (False, False, True):
-            location_filter = (
-                sqlalchemy.or_(database.tables.locations.c.real == is_real, database.tables.locations.c.real == None),
+            location_filter = sqlalchemy.or_(
+                database.tables.locations.c.real == is_real, database.tables.locations.c.real == None
             )
-
         case (False, True, False):
             location_filter = sqlalchemy.or_(
                 database.tables.locations.c.active == is_active, database.tables.locations.c.active == None
             )
         case (True, False, False):
-            location_filter = (
-                geoalchemy2.functions.ST_Contains(
-                    sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
-                    geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
-                ),
+            location_filter = geoalchemy2.functions.ST_Contains(
+                sqlalchemy.select([database.tables.shapes.c.geom], database.tables.shapes.c.key.in_(in_area)),
+                geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4236),
             )
         case (False, True, True):
             location_filter = sqlalchemy.and_(
