@@ -42,6 +42,25 @@ paths:
     get:
       description: Get water right locations
       summary: Get water right locations
+      parameters:
+        - in: query
+          name: in
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+            default: null
+        - in: query
+          name: is_real
+          schema:
+            type: boolean
+            default: null
+
+
       responses:
         200:
           description: The query returns at least one location
