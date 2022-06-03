@@ -4,7 +4,7 @@ info:
   description: Water Right Location Service
   version: 1.0.0
 servers:
-  - url: '/api/water-rights/location'
+  - url: '/api/water-rights/'
 components:
   schemas:
     Point3D:
