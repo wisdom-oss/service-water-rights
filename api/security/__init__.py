@@ -62,7 +62,6 @@ def is_authorized_user(
             http_status=http.HTTPStatus.REQUEST_TIMEOUT,
         )
     # Try to read the response
-    print(introspection_response_bytes)
     token = models.internal.TokenIntrospection.parse_raw(introspection_response_bytes)
     if not token.active:
         match token.reason:

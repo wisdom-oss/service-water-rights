@@ -84,7 +84,7 @@ async def etag_comparison(request: fastapi.Request, call_next):
         if_modified_since_value = email.utils.parsedate_to_datetime(if_modified_since_value)
     # Get the last update of the schema from which the service gets its data from
     # TODO: Set your schema name here
-    last_database_modification = tools.get_last_schema_update("<<your-schema-name-here>>", database.engine)
+    last_database_modification = tools.get_last_schema_update("nlwkn_water_rights", database.engine)
     data_changed = if_modified_since_value < last_database_modification
     if query_hash == if_none_match_value and not data_changed:
         return fastapi.Response(status_code=304, headers={"ETag": f"{query_hash}"})
