@@ -112,6 +112,7 @@ async def get(
         database.tables.locations.c.water_right,
         database.tables.locations.c.active,
         database.tables.locations.c.real,
+        database.tables.locations.c.name,
         sqlalchemy.cast(
             geoalchemy2.functions.ST_AsGeoJSON(
                 geoalchemy2.functions.ST_Transform(database.tables.locations.c.location, 4326)

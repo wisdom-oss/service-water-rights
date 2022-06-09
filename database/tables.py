@@ -24,6 +24,7 @@ locations = sqlalchemy.Table(
     sqlalchemy.Column("active", sqlalchemy.Boolean),
     sqlalchemy.Column("location", geoalchemy2.Geometry("Point", 25832)),
     sqlalchemy.Column("real", sqlalchemy.Boolean),
+    sqlalchemy.Column("name", sqlalchemy.Text),
 )
 
 
