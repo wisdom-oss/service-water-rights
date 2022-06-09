@@ -9,11 +9,12 @@ import amqp_rpc_client
 import fastapi
 import geoalchemy2.functions
 import orjson
-import py_eureka_client.eureka_client
 import pytz as pytz
-import sqlalchemy.exc
+import redis
 import sqlalchemy.dialects
+import sqlalchemy.exc
 import starlette.middleware.gzip
+import starlette.responses
 
 import api.handler
 import configuration
@@ -26,7 +27,8 @@ from api import security
 
 # %% Global Clients
 _amqp_client: typing.Optional[amqp_rpc_client.Client] = None
-_service_registry_client: typing.Optional[py_eureka_client.eureka_client.EurekaClient] = None
+_redis_client: typing.Union[None, redis.Redis] = None
+
 
 # %% API Setup
 service = fastapi.FastAPI()
@@ -37,10 +39,14 @@ service.add_middleware(starlette.middleware.gzip.GZipMiddleware, minimum_size=1)
 
 # %% Configurations
 _security_configuration = configuration.SecurityConfiguration()
+_service_configuration = configuration.ServiceConfiguration()
+_redis_configuration = configuration.RedisConfiguration()
+
 if _security_configuration.scope_string_value is None:
     service_scope = models.internal.ServiceScope.parse_file("./configuration/scope.json")
     _security_configuration.scope_string_value = service_scope.value
 
+_redis_client = redis.Redis.from_url(_redis_configuration.dsn)
 
 # %% Middlewares
 @service.middleware("http")
@@ -61,13 +67,11 @@ async def etag_comparison(request: fastapi.Request, call_next):
     # Access all parameters used for creating the hash
     path = request.url.path
     query_parameter = dict(request.query_params)
-    content_type = request.headers.get("Content-Type", "text/plain")
     # Now iterate through all query parameters and make sure they are sorted if they are lists
     for key, value in dict(query_parameter).items():
         # Now check if the value is a list
         if isinstance(value, list):
             query_parameter[key] = sorted(value)
-
     query_dict = {
         "request_path": path,
         "request_query_parameter": query_parameter,
@@ -75,24 +79,56 @@ async def etag_comparison(request: fastapi.Request, call_next):
     query_data = orjson.dumps(query_dict, option=orjson.OPT_SORT_KEYS)
     # Now create a hashsum of the query data
     query_hash = hashlib.sha3_256(query_data).hexdigest()
+    # Create redis keys for later usage
+    response_cache_key = _service_configuration.name + ".data." + query_hash
+    response_change_cache_key = _service_configuration.name + ".last_change." + query_hash
     # Now access the headers of the request and check for the If-None-Match Header
-    if_none_match_value = request.headers.get("If-None-Match")
-    if_modified_since_value = request.headers.get("If-Modified-Since")
-    if if_modified_since_value is None:
-        if_modified_since_value = datetime.datetime.fromtimestamp(0, tz=pytz.UTC)
+    e_tag = request.headers.get("If-None-Match", None)
+    last_known_update = request.headers.get("If-Modified-Since", _redis_client.get(response_change_cache_key))
+    if last_known_update is None:
+        last_known_update = datetime.datetime.fromtimestamp(0, tz=pytz.UTC)
     else:
-        if_modified_since_value = email.utils.parsedate_to_datetime(if_modified_since_value)
+        if type(last_known_update) is bytes:
+            last_known_update = email.utils.parsedate_to_datetime(last_known_update.decode("utf-8"))
+        else:
+            last_known_update = email.utils.parsedate_to_datetime(last_known_update)
     # Get the last update of the schema from which the service gets its data from
-    # TODO: Set your schema name here
     last_database_modification = tools.get_last_schema_update("nlwkn_water_rights", database.engine)
-    data_changed = if_modified_since_value < last_database_modification
-    if query_hash == if_none_match_value and not data_changed:
-        return fastapi.Response(status_code=304, headers={"ETag": f"{query_hash}"})
-    else:
-        response: fastapi.Response = await call_next(request)
-        response.headers.append("ETag", f"{query_hash}")
-        response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
+    data_changed = last_known_update < last_database_modification
+    if data_changed:
+        response: starlette.responses.StreamingResponse = await call_next(request)
+        if response.status_code == 200:
+            _redis_client.set(response_change_cache_key, email.utils.format_datetime(last_database_modification))
+            response_content = [chunk async for chunk in response.body_iterator][0].decode("utf-8")
+            _redis_client.set(response_cache_key, response_content)
+            response.headers.append("ETag", f"{query_hash}")
+            response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
+            return fastapi.Response(
+                content=response_content,
+                headers={"E-Tag": query_hash, "Last-Modified": email.utils.format_datetime(last_database_modification)},
+                media_type="text/json",
+            )
         return response
+    if _redis_client.get(response_cache_key) is None:
+        response: starlette.responses.StreamingResponse = await call_next(request)
+        if response.status_code == 200:
+            _redis_client.set(response_change_cache_key, email.utils.format_datetime(last_database_modification))
+            response_content = [chunk async for chunk in response.body_iterator][0].decode("utf-8")
+            _redis_client.set(response_cache_key, response_content)
+            response.headers.append("ETag", f"{query_hash}")
+            response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
+            return fastapi.Response(
+                content=response_content,
+                headers={"E-Tag": query_hash, "Last-Modified": email.utils.format_datetime(last_database_modification)},
+                media_type="text/json",
+            )
+        return response
+    else:
+        return fastapi.Response(
+            content=_redis_client.get(response_cache_key),
+            headers={"E-Tag": query_hash, "Last-Modified": email.utils.format_datetime(last_database_modification)},
+            media_type="text/json",
+        )
 
 
 # %% Routes
