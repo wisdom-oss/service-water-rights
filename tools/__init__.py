@@ -31,9 +31,7 @@ async def is_host_available(host: str, port: int, timeout: int = 10) -> bool:
 
 
 def get_last_schema_update(schema_name: str, engine: sqlalchemy.engine.Engine) -> datetime.datetime:
-    query = (
-        f"SELECT timestamp " f"FROM public.audit " f"WHERE schema_name = '{schema_name}' " f"ORDER BY timestamp DESC "
-    )
+    query = f"SELECT timestamp FROM public.audit WHERE schema_name = '{schema_name}' ORDER BY timestamp DESC "
     result = engine.execute(query).first()
     if not result:
         return datetime.datetime.now(tz=tzlocal.get_localzone())
