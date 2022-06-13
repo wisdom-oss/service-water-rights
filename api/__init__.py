@@ -35,7 +35,6 @@ service = fastapi.FastAPI()
 service.add_exception_handler(exceptions.APIException, api.handler.handle_api_error)
 service.add_exception_handler(fastapi.exceptions.RequestValidationError, api.handler.handle_request_validation_error)
 service.add_exception_handler(sqlalchemy.exc.IntegrityError, api.handler.handle_integrity_error)
-service.add_middleware(starlette.middleware.gzip.GZipMiddleware, minimum_size=1)
 
 # %% Configurations
 _security_configuration = configuration.SecurityConfiguration()
@@ -99,10 +98,11 @@ async def etag_comparison(request: fastapi.Request, call_next):
         response: starlette.responses.StreamingResponse = await call_next(request)
         if response.status_code == 200:
             _redis_client.set(response_change_cache_key, email.utils.format_datetime(last_database_modification))
-            response_content = [chunk async for chunk in response.body_iterator][0]
+            response_content = [chunk async for chunk in response.body_iterator][0].decode()
             _redis_client.set(response_cache_key, response_content)
             response.headers.append("ETag", f"{query_hash}")
             response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
+
             return fastapi.Response(
                 content=response_content,
                 headers={"E-Tag": query_hash, "Last-Modified": email.utils.format_datetime(last_database_modification)},
