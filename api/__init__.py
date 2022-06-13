@@ -99,7 +99,7 @@ async def etag_comparison(request: fastapi.Request, call_next):
         response: starlette.responses.StreamingResponse = await call_next(request)
         if response.status_code == 200:
             _redis_client.set(response_change_cache_key, email.utils.format_datetime(last_database_modification))
-            response_content = [chunk async for chunk in response.body_iterator][0].decode("utf-8")
+            response_content = [chunk async for chunk in response.body_iterator][0]
             _redis_client.set(response_cache_key, response_content)
             response.headers.append("ETag", f"{query_hash}")
             response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
@@ -113,7 +113,7 @@ async def etag_comparison(request: fastapi.Request, call_next):
         response: starlette.responses.StreamingResponse = await call_next(request)
         if response.status_code == 200:
             _redis_client.set(response_change_cache_key, email.utils.format_datetime(last_database_modification))
-            response_content = [chunk async for chunk in response.body_iterator][0].decode("utf-8")
+            response_content = [chunk async for chunk in response.body_iterator][0]
             _redis_client.set(response_cache_key, response_content)
             response.headers.append("ETag", f"{query_hash}")
             response.headers.append("Last-Modified", email.utils.format_datetime(last_database_modification))
