@@ -25,10 +25,6 @@ import models.internal
 import tools
 from api import security
 
-# %% Global Clients
-_amqp_client: typing.Optional[amqp_rpc_client.Client] = None
-_redis_client: typing.Union[None, redis.Redis] = None
-
 
 # %% API Setup
 service = fastapi.FastAPI()
@@ -40,11 +36,14 @@ service.add_exception_handler(sqlalchemy.exc.IntegrityError, api.handler.handle_
 _security_configuration = configuration.SecurityConfiguration()
 _service_configuration = configuration.ServiceConfiguration()
 _redis_configuration = configuration.RedisConfiguration()
+_amqp_configuration = configuration.AMQPConfiguration()
 
 if _security_configuration.scope_string_value is None:
     service_scope = models.internal.ServiceScope.parse_file("./configuration/scope.json")
     _security_configuration.scope_string_value = service_scope.value
 
+# %% Global Clients
+_amqp_client = amqp_rpc_client.Client(_amqp_configuration.dsn, mute_pika=True)
 _redis_client = redis.Redis.from_url(_redis_configuration.dsn)
 
 # %% Middlewares

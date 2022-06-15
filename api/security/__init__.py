@@ -24,7 +24,7 @@ _amqp_settings = configuration.AMQPConfiguration()
 
 
 # %% Clients needed for the security
-_amqp_client = amqp_rpc_client.Client(_amqp_settings.dsn)
+_amqp_client = amqp_rpc_client.Client(_amqp_settings.dsn, mute_pika=True)
 __logger = logging.getLogger("security")
 
 
