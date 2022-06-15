@@ -29,7 +29,9 @@ _service_registry_client: typing.Optional[py_eureka_client.eureka_client.EurekaC
 def on_starting(server):
     _service_configuration = configuration.ServiceConfiguration()
     logging.basicConfig(
-        format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S %z"
+        format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S %z",
+        level=_service_configuration.logging_level,
     )
     # %% Validate the Service Registry settings and reachability
     try:
