@@ -141,14 +141,14 @@ async def get(
     available_parameter = (in_area is not None, is_active is not None, is_real is not None)
     # the columns which are queried
     query_columns = [
-        database.tables.e_usage_locations.c.id,
-        database.tables.e_usage_locations.c.water_right,
-        database.tables.e_usage_locations.c.active,
-        database.tables.e_usage_locations.c.real,
-        database.tables.e_usage_locations.c.name,
+        database.tables.E_UsageLocation.id,
+        database.tables.E_UsageLocation.water_right,
+        database.tables.E_UsageLocation.active,
+        database.tables.E_UsageLocation.real,
+        database.tables.E_UsageLocation.name,
         sqlalchemy.cast(
             geoalchemy2.functions.ST_AsGeoJSON(
-                geoalchemy2.functions.ST_Transform(database.tables.e_usage_locations.c.location, 4326)
+                geoalchemy2.functions.ST_Transform(database.tables.E_UsageLocation.location, 4326)
             ),
             sqlalchemy.dialects.postgresql.JSONB,
         ).label("geojson"),
@@ -158,12 +158,12 @@ async def get(
             location_filter = None
         case (False, False, True):
             location_filter = sqlalchemy.or_(
-                database.tables.e_usage_locations.c.real == is_real, database.tables.e_usage_locations.c.real == None
+                database.tables.E_UsageLocation.real == is_real, database.tables.E_UsageLocation.real == None
             )
         case (False, True, False):
             location_filter = sqlalchemy.or_(
-                database.tables.e_usage_locations.c.active == is_active,
-                database.tables.e_usage_locations.c.active == None,
+                database.tables.E_UsageLocation.active == is_active,
+                database.tables.E_UsageLocation.active == None,
             )
         case (True, False, False):
             location_filter = sqlalchemy.or_(
@@ -173,7 +173,7 @@ async def get(
                             [geoalchemy2.functions.ST_Transform(database.tables.shapes.c.geom, 25832)],
                             database.tables.shapes.c.key == k,
                         ),
-                        database.tables.e_usage_locations.c.location,
+                        database.tables.E_UsageLocation.location,
                     )
                     for k in in_area
                 ],
@@ -181,19 +181,19 @@ async def get(
         case (False, True, True):
             location_filter = sqlalchemy.and_(
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.real == is_real,
-                    database.tables.e_usage_locations.c.real == None,
+                    database.tables.E_UsageLocation.real == is_real,
+                    database.tables.E_UsageLocation.real == None,
                 ),
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.active == is_active,
-                    database.tables.e_usage_locations.c.active == None,
+                    database.tables.E_UsageLocation.active == is_active,
+                    database.tables.E_UsageLocation.active == None,
                 ),
             )
         case (True, False, True):
             location_filter = sqlalchemy.and_(
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.real == is_real,
-                    database.tables.e_usage_locations.c.real == None,
+                    database.tables.E_UsageLocation.real == is_real,
+                    database.tables.E_UsageLocation.real == None,
                 ),
                 sqlalchemy.or_(
                     *[
@@ -202,7 +202,7 @@ async def get(
                                 [geoalchemy2.functions.ST_Transform(database.tables.shapes.c.geom, 25832)],
                                 database.tables.shapes.c.key == k,
                             ),
-                            database.tables.e_usage_locations.c.location,
+                            database.tables.E_UsageLocation.location,
                         )
                         for k in in_area
                     ],
@@ -211,8 +211,8 @@ async def get(
         case (True, True, False):
             location_filter = sqlalchemy.and_(
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.active == is_active,
-                    database.tables.e_usage_locations.c.active == None,
+                    database.tables.E_UsageLocation.active == is_active,
+                    database.tables.E_UsageLocation.active == None,
                 ),
                 sqlalchemy.or_(
                     *[
@@ -221,7 +221,7 @@ async def get(
                                 [geoalchemy2.functions.ST_Transform(database.tables.shapes.c.geom, 25832)],
                                 database.tables.shapes.c.key == k,
                             ),
-                            database.tables.e_usage_locations.c.location,
+                            database.tables.E_UsageLocation.location,
                         )
                         for k in in_area
                     ],
@@ -230,12 +230,12 @@ async def get(
         case (True, True, True):
             location_filter = sqlalchemy.and_(
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.real == is_real,
-                    database.tables.e_usage_locations.c.real == None,
+                    database.tables.E_UsageLocation.real == is_real,
+                    database.tables.E_UsageLocation.real == None,
                 ),
                 sqlalchemy.or_(
-                    database.tables.e_usage_locations.c.active == is_active,
-                    database.tables.e_usage_locations.c.active == None,
+                    database.tables.E_UsageLocation.active == is_active,
+                    database.tables.E_UsageLocation.active == None,
                 ),
                 sqlalchemy.or_(
                     *[
@@ -244,7 +244,7 @@ async def get(
                                 [geoalchemy2.functions.ST_Transform(database.tables.shapes.c.geom, 25832)],
                                 database.tables.shapes.c.key == k,
                             ),
-                            database.tables.e_usage_locations.c.location,
+                            database.tables.E_UsageLocation.location,
                         )
                         for k in in_area
                     ],
@@ -265,83 +265,81 @@ async def get_details(
     user: models.internal.UserAccount
     | bool = fastapi.Security(security.is_authorized_user, scopes=[_security_configuration.scope_string_value]),
 ):
+    database.tables.init()
     water_right_query_columns = [
-        database.tables.water_rights.c.id,
-        database.tables.water_rights.c.no,
-        database.tables.water_rights.c.ext_id.label("externalId"),
-        database.tables.water_rights.c.file_ref.label("fileReference"),
-        database.tables.water_rights.c.legal_title.label("legalTitle"),
-        database.tables.water_rights.c.state,
-        database.tables.water_rights.c.subject,
-        database.tables.water_rights.c.address,
-        database.tables.water_rights.c.annotation,
-        database.tables.water_rights.c.bailee,
-        database.tables.water_rights.c.date_of_change.label("dateOfChange"),
-        database.tables.water_rights.c.valid,
-        database.tables.water_rights.c.granting_authority.label("grantingAuthority"),
-        database.tables.water_rights.c.registering_authority.label("registeringAuthority"),
-        database.tables.water_rights.c.water_authority.label("waterAuthority"),
+        database.tables.WaterRight.id,
+        database.tables.WaterRight.no,
+        database.tables.WaterRight.ext_id.label("externalId"),
+        database.tables.WaterRight.file_ref.label("fileReference"),
+        database.tables.WaterRight.legal_title.label("legalTitle"),
+        database.tables.WaterRight.state,
+        database.tables.WaterRight.subject,
+        database.tables.WaterRight.address,
+        database.tables.WaterRight.annotation,
+        database.tables.WaterRight.bailee,
+        database.tables.WaterRight.date_of_change.label("dateOfChange"),
+        database.tables.WaterRight.valid,
+        database.tables.WaterRight.granting_authority.label("grantingAuthority"),
+        database.tables.WaterRight.registering_authority.label("registeringAuthority"),
+        database.tables.WaterRight.water_authority.label("waterAuthority"),
     ]
 
     e_usage_location_query_columns = [
-        database.tables.e_usage_locations.c.id,
-        database.tables.e_usage_locations.c.water_right,
-        database.tables.e_usage_locations.c.name,
-        database.tables.e_usage_locations.c.no,
-        database.tables.e_usage_locations.c.active,
+        database.tables.E_UsageLocation.id,
+        database.tables.E_UsageLocation.water_right.label("waterRight"),
+        database.tables.E_UsageLocation.name,
+        database.tables.E_UsageLocation.no,
+        database.tables.E_UsageLocation.active,
         sqlalchemy.cast(
             geoalchemy2.functions.ST_AsGeoJSON(
-                geoalchemy2.functions.ST_Transform(database.tables.e_usage_locations.c.location, 4326)
+                geoalchemy2.functions.ST_Transform(database.tables.E_UsageLocation.location, 4326)
             ),
             sqlalchemy.dialects.postgresql.JSONB,
         ).label("location"),
-        database.tables.e_usage_locations.c.basin_no,
-        database.tables.e_usage_locations.c.county,
-        database.tables.e_usage_locations.c.eu_survey_area,
-        database.tables.e_usage_locations.c.field,
-        database.tables.e_usage_locations.c.groundwater_volume,
-        database.tables.e_usage_locations.c.legal_scope,
-        database.tables.e_usage_locations.c.local_sub_district,
-        database.tables.e_usage_locations.c.maintenance_association,
-        database.tables.e_usage_locations.c.municipal_area,
-        database.tables.e_usage_locations.c.plot,
-        database.tables.e_usage_locations.c.real,
-        database.tables.e_usage_locations.c.rivershed,
-        database.tables.e_usage_locations.c.serial_no,
-        database.tables.e_usage_locations.c.top_map_1_25000,
-        database.tables.e_usage_locations.c.water_body,
-        database.tables.e_usage_locations.c.flood_area,
-        database.tables.e_usage_locations.c.water_protection_area,
-        database.tables.e_usage_locations.c.withdrawal_rate,
-        database.tables.e_usage_locations.c.fluid_discharge,
-        database.tables.e_usage_locations.c.irrigation_area,
-        database.tables.e_usage_locations.c.rain_supplement,
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.basin_no).label("basinNo"),
+        database.tables.E_UsageLocation.county,
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.eu_survey_area).label("euSurveyArea"),
+        database.tables.E_UsageLocation.field,
+        database.tables.E_UsageLocation.groundwater_volume.label("groundwaterVolume"),
+        database.tables.E_UsageLocation.legal_scope.label("legalScope"),
+        database.tables.E_UsageLocation.local_sub_district.label("localSubDistrict"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.maintenance_association).label(
+            "maintenanceAssociation"
+        ),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.municipal_area).label("municipalArea"),
+        database.tables.E_UsageLocation.plot,
+        database.tables.E_UsageLocation.real,
+        database.tables.E_UsageLocation.rivershed,
+        database.tables.E_UsageLocation.serial_no.label("serialNo"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.top_map_1_25000).label("topMap1to25000"),
+        database.tables.E_UsageLocation.water_body.label("waterBody"),
+        database.tables.E_UsageLocation.flood_area.label("floodArea"),
+        database.tables.E_UsageLocation.water_protection_area.label("waterProtectionArea"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.withdrawal_rate).label("withdrawalRates"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.fluid_discharge).label("fluidDischarge"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.irrigation_area).label("irrigationArea"),
+        sqlalchemy.func.to_json(database.tables.E_UsageLocation.rain_supplement).label("rainSupplement"),
     ]
 
-    water_right_query = sqlalchemy.select(
-        water_right_query_columns, database.tables.water_rights.c.no == water_right_number
+    water_right_query = sqlalchemy.select(*water_right_query_columns).where(
+        database.tables.WaterRight.no == water_right_number
     )
     water_right = database.engine.execute(water_right_query).first()
+    if water_right is None:
+        raise exceptions.APIException(
+            error_code="NO_SUCH_WATER_RIGHT",
+            error_title="No water right known by this number",
+            error_description="There is no water right in the database that matches this number",
+            http_status=http.HTTPStatus.NOT_FOUND,
+        )
+    water_right_dict = dict(water_right)
+    water_right_dict.update({"valid": {"from": water_right["valid"].lower, "until": water_right["valid"].upper}})
     # Pull all e-type usage locations
-    e_usage_location_query = f"""SELECT nlwkn_water_rights.e_usage_locations.id,
-    nlwkn_water_rights.e_usage_locations.water_right, nlwkn_water_rights.e_usage_locations.name,
-    nlwkn_water_rights.e_usage_locations.no, nlwkn_water_rights.e_usage_locations.active, CAST(ST_AsGeoJSON(
-    ST_Transform(nlwkn_water_rights.e_usage_locations.location, 4326)) AS JSONB) AS location,
-    nlwkn_water_rights.e_usage_locations.basin_no, nlwkn_water_rights.e_usage_locations.county,
-     nlwkn_water_rights.e_usage_locations.eu_survey_area, nlwkn_water_rights.e_usage_locations.field,
-      nlwkn_water_rights.e_usage_locations.groundwater_volume, nlwkn_water_rights.e_usage_locations.legal_scope,
-       nlwkn_water_rights.e_usage_locations.local_sub_district, nlwkn_water_rights.e_usage_locations.maintenance_association,
-        nlwkn_water_rights.e_usage_locations.municipal_area, nlwkn_water_rights.e_usage_locations.plot, nlwkn_water_rights.e_usage_locations.real,
-         nlwkn_water_rights.e_usage_locations.rivershed, nlwkn_water_rights.e_usage_locations.serial_no,
-         nlwkn_water_rights.e_usage_locations.top_map_1_25000,
-          nlwkn_water_rights.e_usage_locations.water_body,
-         nlwkn_water_rights.e_usage_locations.flood_area, nlwkn_water_rights.e_usage_locations.water_protection_area, nlwkn_water_rights.e_usage_locations.withdrawal_rate,
-          nlwkn_water_rights.e_usage_locations.fluid_discharge, nlwkn_water_rights.e_usage_locations.irrigation_area, nlwkn_water_rights.e_usage_locations.rain_supplement
-FROM nlwkn_water_rights.e_usage_locations
-WHERE nlwkn_water_rights.e_usage_locations.water_right = {water_right_number}"""
-    usage_locations = database.engine.execute(e_usage_location_query)
+    e_usage_location_query = sqlalchemy.select(
+        e_usage_location_query_columns, database.tables.E_UsageLocation.water_right == water_right_number
+    )
+    usage_locations = database.engine.execute(e_usage_location_query).all()
     locations = []
     for usage_location in usage_locations:
-        print(usage_location)
         locations.append(usage_location)
-    return {**dict(water_right), "locations": locations}
+    return {**water_right_dict, "locations": locations}
