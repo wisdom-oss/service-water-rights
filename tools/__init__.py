@@ -2,8 +2,12 @@ import asyncio
 import datetime
 import time
 
+import requests
 import sqlalchemy
 import tzlocal
+
+import configuration
+import enums
 
 
 async def is_host_available(host: str, port: int, timeout: int = 10) -> bool:
@@ -38,8 +42,27 @@ def get_last_schema_update(schema_name: str, engine: sqlalchemy.engine.Engine) -
         f"ORDER BY timestamp DESC "
         f"LIMIT 1"
     )
-    result = engine.execute(query).all()
+    result = engine.execute(query).first()
     print(result)
     if not result:
         return datetime.datetime.now(tz=tzlocal.get_localzone())
     return datetime.datetime.fromtimestamp(result[0], tz=tzlocal.get_localzone())
+
+
+def query_kong(path: str, method: enums.HTTPMethod, data: dict | None = None) -> requests.Response:
+    _kong = configuration.KongGatewayInformation()
+    match method:
+        case enums.HTTPMethod.GET:
+            return requests.get(f"http://{_kong.hostname}:{_kong.admin_port}{path}")
+        case enums.HTTPMethod.POST:
+            return requests.post(f"http://{_kong.hostname}:{_kong.admin_port}{path}", data=data)
+        case enums.HTTPMethod.PUT:
+            return requests.put(f"http://{_kong.hostname}:{_kong.admin_port}{path}", data=data)
+        case enums.HTTPMethod.PATCH:
+            return requests.patch(f"http://{_kong.hostname}:{_kong.admin_port}{path}", data=data)
+        case enums.HTTPMethod.DELETE:
+            return requests.delete(f"http://{_kong.hostname}:{_kong.admin_port}{path}", data=data)
+        case _:
+            raise Exception(
+                "The function only supports the following HTTP request types: GET, POST, PUT, PATCH, DELETE"
+            )

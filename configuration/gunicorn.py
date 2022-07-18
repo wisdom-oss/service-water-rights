@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import socket
 import sys
 import typing
 
@@ -8,8 +9,10 @@ import amqp_rpc_client
 import orjson
 import py_eureka_client.eureka_client
 import pydantic
+import requests
 
 import configuration
+import enums
 import models.amqp
 import models.internal
 import tools
@@ -23,49 +26,12 @@ worker_class = "uvicorn.workers.UvicornWorker"
 max_requests = 0
 timeout = 0
 
-_service_registry_client: typing.Optional[py_eureka_client.eureka_client.EurekaClient] = None
-
 
 async def on_starting(server):
     _service_configuration = configuration.ServiceConfiguration()
     logging.basicConfig(
         format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S %z"
     )
-    # %% Validate the Service Registry settings and reachability
-    try:
-        _service_registry_configuration = configuration.ServiceRegistryConfiguration()
-    except pydantic.ValidationError:
-        logging.critical(
-            "Unable to read the service registry related settings. Please refer to "
-            "the documentation for further instructions: "
-            "SERVICE_REGISTRY_SETTINGS_INVALID"
-        )
-        sys.exit(1)
-    logging.info("Checking the connection to the service registry")
-    _registry_available = asyncio.run(
-        tools.is_host_available(
-            host=_service_registry_configuration.host, port=_service_registry_configuration.port, timeout=10
-        )
-    )
-    if not _registry_available:
-        logging.critical(
-            "The service registry is not reachable. Therefore, this service is unable to register "
-            "itself at the service registry and it is not callable"
-        )
-        sys.exit(2)
-    # %% Set up the service registry client
-    global _service_registry_client
-    _service_registry_client = py_eureka_client.eureka_client.EurekaClient(
-        eureka_server=f"http://{_service_registry_configuration.host}:{_service_registry_configuration.port}/",
-        app_name=_service_configuration.name,
-        instance_port=_service_configuration.http_port,
-        should_register=True,
-        should_discover=False,
-        renewal_interval_in_secs=5,
-        duration_in_secs=30,
-    )
-    await _service_registry_client.start()
-    await _service_registry_client.status_update("STARTING")
     # %% Validate the AMQP configuration and message broker reachability
     try:
         _amqp_configuration = configuration.AMQPConfiguration()
@@ -89,7 +55,6 @@ async def on_starting(server):
     # %% Check if the configured service scope is available
     # Create an amqp client
     _amqp_client = amqp_rpc_client.Client(amqp_dsn=_amqp_configuration.dsn, mute_pika=True)
-    # TODO: Create scope configuration "scope.json" in "configuration" folder
     service_scope = models.internal.ServiceScope.parse_file("./configuration/scope.json")
     # Query if the scope already exists
     _scope_check_request = models.amqp.CheckScopeRequest(value=service_scope.value)
@@ -144,11 +109,182 @@ async def on_starting(server):
             "not start"
         )
         sys.exit(2)
+    try:
+        _gateway_information = configuration.KongGatewayInformation()
+    except pydantic.ValidationError:
+        logging.critical(
+            "Unable to read the information about the Kong API Gateway. Please refer to the documentation for further "
+            "instructions: KONG_INFORMATION_INVALID "
+        )
+        sys.exit(1)
+    _gateway_reachable = asyncio.run(
+        tools.is_host_available(_gateway_information.hostname, _gateway_information.admin_port)
+    )
+    if not _gateway_reachable:
+        logging.critical("The api gateway is not available. Since the service needs to register itself on the ")
+        sys.exit(2)
 
 
-async def when_ready(server):
-    await _service_registry_client.status_update("UP")
+def when_ready(server):
+    # %% Register at the Kong gateway
+    _gateway_information = configuration.KongGatewayInformation()
+    _service_settings = configuration.ServiceConfiguration()
+    logging.debug("Read the following information about the gateway:\n%s", _gateway_information.json(indent=2))
+    # Try to get information about the upstream
+    upstream_information_request = tools.query_kong(
+        f"/upstreams/upstream_{_service_settings.name}", enums.HTTPMethod.GET
+    )
+    if upstream_information_request.status_code == 404:
+        logging.warning("No upstream for this service found. Creating a new upstream in the API gateway...")
+        new_upstream_information = {"name": f"upstream_{_service_settings.name}"}
+        upstream_creation = tools.query_kong(
+            f"/upstreams/",
+            enums.HTTPMethod.POST,
+            data=new_upstream_information,
+        )
+        if upstream_creation.status_code == 201:
+            logging.info(
+                "Created a new upstream for this service:\n%s",
+                orjson.dumps(upstream_creation.json(), option=orjson.OPT_INDENT_2),
+            )
+        else:
+            logging.debug(
+                f"Received a {upstream_creation.status_code} from the gateway:\n%s",
+                orjson.dumps(upstream_creation.json(), option=orjson.OPT_INDENT_2),
+            )
+    elif upstream_information_request.status_code == 200:
+        logging.debug(
+            "Found the following upstream information for this service:\n%s",
+            orjson.dumps(upstream_information_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+        )
+
+    service_information_request = tools.query_kong(f"/services/service_{_service_settings.name}", enums.HTTPMethod.GET)
+    if service_information_request.status_code == 404:
+        logging.warning("No service entry found for this service. Creating a new entry in the API gateway...")
+        new_service_information = {
+            "name": f"service_{_service_settings.name}",
+            "host": f"upstream_{_service_settings.name}",
+        }
+        service_creation_request = tools.query_kong(f"/services/", enums.HTTPMethod.POST, new_service_information)
+        if service_creation_request.status_code == 201:
+            logging.info(
+                "Created a new entry for this service:\n%s",
+                orjson.dumps(service_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
+    elif service_information_request.status_code == 200:
+        logging.debug(
+            "Found the following information for this service:\n%s",
+            orjson.dumps(service_information_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+        )
+    route_information_request = tools.query_kong(
+        f"/services/service_" f"{_service_settings.name}/routes/{_gateway_information.service_path_slug}",
+        method=enums.HTTPMethod.GET,
+    )
+    if route_information_request.status_code == 404:
+        logging.warning("No route is configured for this service. Creating a new route definition for this service...")
+        route_creation_request_data = {
+            "paths[]": f"/{_gateway_information.service_path_slug}",
+            "name": _gateway_information.service_path_slug,
+        }
+        route_creation_request = tools.query_kong(
+            f"/services/service_{_service_settings.name}/routes/",
+            method=enums.HTTPMethod.POST,
+            data=route_creation_request_data,
+        )
+        if route_creation_request.status_code == 201:
+            logging.info(
+                "Created a new route for this service:\n%s",
+                orjson.dumps(route_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
+    # Determine the ip address of the service container
+    ip_address = socket.gethostbyname(socket.gethostname())
+    # Request information about the available targets
+    upstream_target_information_request = tools.query_kong(
+        f"/upstreams/upstream_{_service_settings.name}/targets", enums.HTTPMethod.GET
+    )
+    upstream_target_information = upstream_target_information_request.json()
+    logging.debug("Got following upstream information:\n%s", upstream_target_information)
+    container_listed = any(
+        [
+            target["target"] == f"{ip_address}:{_service_settings.http_port}"
+            for target in upstream_target_information["data"]
+        ]
+    )
+    if not container_listed:
+        upstream_target_creation_data = {"target": f"{ip_address}:{_service_settings.http_port}"}
+        upstream_creation_request = tools.query_kong(
+            f"/upstreams/upstream_{_service_settings.name}/targets",
+            enums.HTTPMethod.POST,
+            upstream_target_creation_data,
+        )
+        if upstream_creation_request.status_code == 201:
+            logging.info(
+                "Created a new upstream target for this service:\n%s",
+                orjson.dumps(upstream_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
+    consumer_information_request = tools.query_kong("/consumers", enums.HTTPMethod.GET)
+    consumer_exists = any(
+        [consumer["custom_id"] == "authorization-service" for consumer in consumer_information_request.json()["data"]]
+    )
+    _consumer_id = None
+    if not consumer_exists:
+        consumer_creation_request_data = {"custom_id": "authorization-service"}
+        consumer_creation_request = tools.query_kong(
+            "/consumers", data=consumer_creation_request_data, method=enums.HTTPMethod.POST
+        )
+        if consumer_creation_request.status_code == 201:
+            logging.info(
+                "Created new consumer for this service:\n%s",
+                orjson.dumps(consumer_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
+            _consumer_id = consumer_creation_request.json()["id"]
+    else:
+        _consumer_id = [
+            consumer["id"]
+            for consumer in consumer_information_request.json()["data"]
+            if consumer["custom_id"] == "authorization-service"
+        ][0]
+    consumer_credential_information_request = tools.query_kong(
+        f"/consumers/{_consumer_id}/oauth2", method=enums.HTTPMethod.GET
+    )
+    consumer_credentials_exists = any(
+        [
+            credential["consumer"]["id"] == _consumer_id
+            for credential in consumer_credential_information_request.json()["data"]
+        ]
+    )
+    if not consumer_credentials_exists:
+        consumer_credential_creation_request_data = {
+            "name": "Authorization Module",
+            "redirect_uris": "http://localhost/authenticated",
+        }
+        consumer_credential_creation_request = tools.query_kong(
+            f"/consumers/{_consumer_id}/oauth2",
+            data=consumer_credential_creation_request_data,
+            method=enums.HTTPMethod.POST,
+        )
+        if consumer_credential_creation_request.status_code == 201:
+            logging.info(
+                "Created new consumer credentials for this service:\n%s",
+                orjson.dumps(consumer_credential_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
+            credential_file = open("/.credential_id", "wt")
+            credential_file.write(consumer_credential_creation_request.json()["id"])
+    else:
+        _credential_id = [
+            credential["id"]
+            for credential in consumer_credential_information_request.json()["data"]
+            if credential["consumer"]["id"] == _consumer_id
+        ][0]
+        credential_file = open("/.credential_id", "wt")
+        credential_file.write(_credential_id)
 
 
-async def on_exit(server):
-    await _service_registry_client.stop()
+def on_exit(server):
+    _service_settings = configuration.ServiceConfiguration()
+    _gateway_information = configuration.KongGatewayInformation()
+    ip_address = socket.gethostbyname(socket.gethostname())
+    upstream_deletion_request = requests.delete(
+        f"http://{_gateway_information.hostname}:{_gateway_information.admin_port}/upstreams/upstream_"
+        f"{_service_settings.name}/targets/{ip_address}:{_service_settings.http_port}",
+    )

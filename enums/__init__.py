@@ -39,3 +39,13 @@ class TokenIntrospectionFailure(str, enum.Enum):
 
     MISSING_PRIVILEGES = "MISSING_PRIVILEGES"
     """The scopes associated to this token are not matching the one required to access this endpoint"""
+
+
+class HTTPMethod(enum.Enum):
+    """A HTTP Request method"""
+
+    GET = enum.auto()
+    POST = enum.auto()
+    PUT = enum.auto()
+    PATCH = enum.auto()
+    DELETE = enum.auto()
