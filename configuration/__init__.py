@@ -123,27 +123,6 @@ class SecurityConfiguration(pydantic.BaseSettings):
         env_file = ".env"
 
 
-class ServiceRegistryConfiguration(pydantic.BaseSettings):
-    """Settings which will influence the connection to the service registry"""
-
-    host: str = pydantic.Field(default=..., alias="CONFIG_SERVICE_REGISTRY_HOST", env="CONFIG_SERVICE_REGISTRY_HOST")
-    """
-    Eureka Service Registry Host
-
-    The host on which the eureka service registry is running on.
-    """
-
-    port: int = pydantic.Field(default=8761, alias="CONFIG_SERVICE_REGISTRY_PORT", env="CONFIG_SERVICE_REGISTRY_PORT")
-    """
-    Eureka Service Registry Port
-
-    The port on which the eureka service registry is running on.
-    """
-
-    class Config:
-        env_file = ".env"
-
-
 class DatabaseConfiguration(pydantic.BaseSettings):
     """Settings which are related to the database connection"""
 
@@ -152,6 +131,37 @@ class DatabaseConfiguration(pydantic.BaseSettings):
     PostgreSQL data source name
 
     The data source name (expressed as URI) pointing to the installation of the used postgresql database
+    """
+
+    class Config:
+        env_file = ".env"
+
+
+class KongGatewayInformation(pydantic.BaseSettings):
+    """Information about the reachability of the API Gateway Admin Endpoints"""
+
+    hostname: str = pydantic.Field(default=..., alias="CONFIG_KONG_HOST", env="CONFIG_KONG_HOST")
+
+    admin_port: int = pydantic.Field(default=8001, alias="CONFIG_KONG_ADMIN_PORT", env="CONFIG_KONG_ADMIN_PORT")
+
+    service_path_slug: str = pydantic.Field(
+        default=..., alias="CONFIG_KONG_SERVICE_SLUG", env="CONFIG_KONG_SERVICE_SLUG"
+    )
+
+    class Config:
+        env_file = ".env"
+
+
+class RedisConfiguration(pydantic.BaseSettings):
+    """Settings which are related to the database connection"""
+
+    use_redis: bool = pydantic.Field(default=False, alias="CONFIG_REDIS_USE", env="CONFIG_REDIS_USE")
+
+    dsn: None | pydantic.RedisDsn = pydantic.Field(default=None, alias="CONFIG_REDIS_DSN", env="CONFIG_REDIS_DSN")
+    """
+    Redis data source name
+
+    The data source name (expressed as URI) pointing to the installation of the used redis database
     """
 
     class Config:

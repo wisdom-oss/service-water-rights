@@ -134,7 +134,7 @@ async def get(
     in_area: None | list[str] = fastapi.Query(default=None, alias="in"),
     is_active: None | bool = fastapi.Query(default=None, alias="is_active"),
     is_real: None | bool = fastapi.Query(default=None, alias="is_real"),
-    user: models.internal.UserAccount
+    user: str
     | bool = fastapi.Security(security.is_authorized_user, scopes=[_security_configuration.scope_string_value]),
 ):
     # Build a tuple with the available parameter
@@ -262,7 +262,7 @@ async def get(
 @service.get("/details/{water_right_number}")
 async def get_details(
     water_right_number: int | None = fastapi.Path(default=...),
-    user: models.internal.UserAccount
+    user: str
     | bool = fastapi.Security(security.is_authorized_user, scopes=[_security_configuration.scope_string_value]),
 ):
     database.tables.init()
