@@ -28,7 +28,10 @@ timeout = 0
 def on_starting(server):
     _service_configuration = configuration.ServiceConfiguration()
     logging.basicConfig(
-        format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S %z"
+        format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S %z",
+        level=_service_configuration.logging_level,
+        force=True,
     )
     # %% Validate the AMQP configuration and message broker reachability
     try:
@@ -52,7 +55,7 @@ def on_starting(server):
         sys.exit(2)
     # %% Check if the configured service scope is available
     # Create an amqp client
-    _amqp_client = amqp_rpc_client.Client(amqp_dsn=_amqp_configuration.dsn, mute_pika=True)
+    _amqp_client = amqp_rpc_client.Client(amqp_dsn=_amqp_configuration.dsn, mute_pika=False)
     service_scope = models.internal.ServiceScope.parse_file("./configuration/scope.json")
     # Query if the scope already exists
     _scope_check_request = models.amqp.CheckScopeRequest(value=service_scope.value)
