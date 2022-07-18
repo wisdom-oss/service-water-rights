@@ -28,7 +28,7 @@ from api import security
 # %% API Setup
 service = fastapi.FastAPI()
 service.add_exception_handler(exceptions.APIException, api.handler.handle_api_error)
-#service.add_exception_handler(fastapi.exceptions.RequestValidationError, api.handler.handle_request_validation_error)
+# service.add_exception_handler(fastapi.exceptions.RequestValidationError, api.handler.handle_request_validation_error)
 service.add_exception_handler(sqlalchemy.exc.IntegrityError, api.handler.handle_integrity_error)
 
 # %% Configurations

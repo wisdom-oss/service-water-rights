@@ -3,11 +3,9 @@ import logging
 import os
 import socket
 import sys
-import typing
 
 import amqp_rpc_client
 import orjson
-import py_eureka_client.eureka_client
 import pydantic
 import requests
 
@@ -27,7 +25,7 @@ max_requests = 0
 timeout = 0
 
 
-async def on_starting(server):
+def on_starting(server):
     _service_configuration = configuration.ServiceConfiguration()
     logging.basicConfig(
         format="[%(asctime)s] [%(process)d] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S %z"
@@ -203,7 +201,10 @@ def when_ready(server):
         f"/upstreams/upstream_{_service_settings.name}/targets", enums.HTTPMethod.GET
     )
     upstream_target_information = upstream_target_information_request.json()
-    logging.debug("Got following upstream information:\n%s", upstream_target_information)
+    logging.debug(
+        "Got following upstream information:\n%s",
+        orjson.dumps(upstream_target_information, option=orjson.OPT_INDENT_2).decode("utf-8"),
+    )
     container_listed = any(
         [
             target["target"] == f"{ip_address}:{_service_settings.http_port}"
@@ -278,6 +279,32 @@ def when_ready(server):
         ][0]
         credential_file = open("/.credential_id", "wt")
         credential_file.write(_credential_id)
+    plugin_information_request = tools.query_kong(
+        f"/services/service_{_service_settings.name}/plugins", method=enums.HTTPMethod.GET
+    )
+    plugins = [plugin for plugin in plugin_information_request.json()["data"]]
+    oauth2_configured = any(["oauth2" == plugin["name"] for plugin in plugins])
+    if not oauth2_configured:
+        plugin_creation_data = {
+            "name": "oauth2",
+            "config.enable_authorization_code": "false",
+            "config.enable_client_credentials": "true",
+            "config.enable_implicit_grant": "false",
+            "config.enable_password_grant": "false",
+            "config.hide_credentials": "true",
+            "config.accept_http_if_already_terminated": "true",
+            "config.global_credentials": "true",
+        }
+        plugin_creation_request = tools.query_kong(
+            f"/services/service_{_service_settings.name}/plugins",
+            data=plugin_creation_data,
+            method=enums.HTTPMethod.POST,
+        )
+        if plugin_creation_request.status_code == 201:
+            logging.info(
+                "Created new OAuth2 plugin for this service:\n%s",
+                orjson.dumps(plugin_creation_request.json(), option=orjson.OPT_INDENT_2).decode("utf-8"),
+            )
 
 
 def on_exit(server):
