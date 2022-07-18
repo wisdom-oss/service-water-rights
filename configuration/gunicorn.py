@@ -64,6 +64,7 @@ def on_starting(server):
     )
     _scope_check_response_bytes = _amqp_client.await_response(_scope_check_request_id)
     _scope_check_response: dict = orjson.loads(_scope_check_response_bytes)
+    logging.info("Got following response from the AMQP Auth Service: %s", _scope_check_response)
     # Check if the scope check response contains any of the known error keys
     if set(_scope_check_response.keys()).issubset({"httpCode", "httpError", "error", "errorName", "errorDescription"}):
         # Since the scope check response contains an error request the scope to be created
@@ -75,6 +76,7 @@ def on_starting(server):
         )
         _scope_create_response_bytes = _amqp_client.await_response(_scope_create_request_id)
         _scope_create_response: dict = orjson.loads(_scope_create_response_bytes)
+        logging.info("Got following response from the AMQP Auth Service: %s", _scope_create_response)
         if set(_scope_create_response.keys()).issubset(
             {"httpCode", "httpError", "error", "errorName", "errorDescription"}
         ):
