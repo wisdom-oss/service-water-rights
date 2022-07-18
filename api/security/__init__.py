@@ -36,7 +36,6 @@ def is_authorized_user(
     :raises exceptions.APIException: The user is not authorized to access this service
     """
     _token_scopes = set([scope.strip() for scope in token_scopes.split(",")])
-    print(_token_scopes)
     if "administrator" in token_scopes:
         return True if user_id is None else user_id
     required_scopes = set(scopes.scopes)
