@@ -8,11 +8,11 @@ type UsageLocation struct {
 	// WaterRight is the water right number used by Cadenza referenced with the location
 	WaterRight int `json:"water_right"`
 	// IsActive reflects the status of the water right location
-	IsActive bool `json:"active"`
+	IsActive *bool `json:"active"`
 	// IsReal reflects the reality of the water right location
-	IsReal bool `json:"real"`
+	IsReal *bool `json:"real"`
 	// Name contains the name for the usage location
-	Name string `json:"name"`
+	Name *string `json:"name"`
 	// Location contains the GeoJSON representation of the usage location
-	Location geojson.Geometry `json:"geojson"`
+	Location *geojson.Geometry `json:"geojson"`
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
-	"github.com/wisdom-oss/microservice-middlewares"
+	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares"
 	"microservice/request/routes"
 	"microservice/vars/globals"
 	"net/http"
@@ -29,7 +29,7 @@ func main() {
 	router.Use(middleware.Heartbeat("/healthcheck"))
 	router.Use(wisdomMiddleware.Authorization([]string{"/healthcheck"}, globals.ScopeConfiguration.ScopeValue))
 	//router.Use()
-	router.HandleFunc("/", routes.BasicHandler)
+	router.HandleFunc("/", routes.UsageLocations)
 
 	// Configure the HTTP server
 	server := &http.Server{
