@@ -25,6 +25,10 @@ variable if it is optional. */
     {
       "key": "GATEWAY_CONFIG_LOCATION",
       "default": "/res/gateway.json5"
+    },
+    {
+      "key": "LISTEN_PORT",
+      "default": "8000"
     }
   ],
 

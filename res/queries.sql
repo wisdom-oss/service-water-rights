@@ -87,7 +87,7 @@ create table nlwkn_water_rights.e_usage_locations
 
 
 -- name: get-all-water-rights
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations;
 
 -- name: get-water-rights-by-reality
