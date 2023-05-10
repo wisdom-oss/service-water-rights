@@ -91,40 +91,40 @@ SELECT id, water_right, active, real, name
 FROM nlwkn_water_rights.e_usage_locations;
 
 -- name: get-water-rights-by-reality
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL;
 
 -- name: get-water-rights-by-state
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE active = $1 OR active IS NULL;
 
 -- name: get-water-rights-by-location
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($1)), location);
 
 -- name: get-water-rights-by-reality-and-location
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), location);
 
 -- name: get-water-rights-by-state-and-location
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE active = $1 OR active IS NULL
 AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), location);
 
 -- name: get-water-rights-by-reality-and-state
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND active = $2 OR active IS NULL;
 
 -- name: get-water-rights-by-reality-state-and-location
-SELECT id, water_right, active, real, name
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(location)
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND active = $2 OR active IS NULL
