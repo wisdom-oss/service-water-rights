@@ -68,9 +68,9 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		validLower = nil
 		validUpper = nil
 	} else {
-		validLowerString := r.Valid.Lower.Time.String()
+		validLowerString := r.Valid.Lower.Time.String()[:10]
 		validLower = &validLowerString
-		validUpperString := r.Valid.Upper.Time.String()
+		validUpperString := r.Valid.Upper.Time.String()[:10]
 		validUpper = &validUpperString
 	}
 	return DetailedWaterRight{
