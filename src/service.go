@@ -30,6 +30,7 @@ func main() {
 	router.Use(wisdomMiddleware.Authorization([]string{"/healthcheck"}, globals.ScopeConfiguration.ScopeValue))
 	//router.Use()
 	router.HandleFunc("/", routes.UsageLocations)
+	router.HandleFunc("/details/{waterRight}", routes.WaterRightDetails)
 
 	// Configure the HTTP server
 	server := &http.Server{

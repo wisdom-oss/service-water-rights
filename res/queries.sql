@@ -87,45 +87,109 @@ create table nlwkn_water_rights.e_usage_locations
 
 
 -- name: get-all-water-rights
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations;
 
 -- name: get-water-rights-by-reality
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL;
 
 -- name: get-water-rights-by-state
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE active = $1 OR active IS NULL;
 
 -- name: get-water-rights-by-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($1)), location);
 
 -- name: get-water-rights-by-reality-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), location);
 
 -- name: get-water-rights-by-state-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE active = $1 OR active IS NULL
 AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), location);
 
 -- name: get-water-rights-by-reality-and-state
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND active = $2 OR active IS NULL;
 
 -- name: get-water-rights-by-reality-state-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(location) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
 FROM nlwkn_water_rights.e_usage_locations
 WHERE real = $1 OR real IS NULL
 AND active = $2 OR active IS NULL
 AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($3)), location);
+
+-- name: get-water-right-details
+SELECT
+    id, no, ext_id, file_ref, legal_title, state, subject, address, annotation,
+    bailee, date_of_change, valid, granting_authority, registering_authority, water_authority
+FROM nlwkn_water_rights.water_rights
+WHERE no = $1::int
+LIMIT 1;
+
+-- name: get-detailed-locations
+SELECT
+    id,
+    water_right,
+    name,
+    no,
+    active,
+    ST_ASGEOJSON(st_transform(location, 4326)) as location,
+    (CASE
+        WHEN basin_no is NULL THEN null
+        WHEN basin_no is not NULL THEN
+            jsonb_build_object('key', (basin_no).key, 'name', (basin_no).name)
+        END) as basin_no,
+    county,
+    (CASE
+        WHEN eu_survey_area is NULL THEN null
+        WHEN eu_survey_area is not NULL THEN
+            jsonb_build_object('key', (eu_survey_area).key, 'name', (eu_survey_area).name)
+        END) as eu_survey_area,
+    field,
+    groundwater_volume,
+    legal_scope,
+    local_sub_district,
+    (CASE
+        WHEN maintenance_association is NULL THEN null
+        WHEN maintenance_association is not NULL THEN
+            jsonb_build_object('key', (maintenance_association).key, 'name', (maintenance_association).name)
+        END) as maintenance_association,
+    (CASE
+        WHEN municipal_area is NULL THEN null
+        WHEN municipal_area is not NULL THEN
+            jsonb_build_object('key', (municipal_area).key, 'name', (municipal_area).name)
+        END) as municipal_area,
+    plot,
+    real,
+    rivershed,
+    serial_no,
+    (CASE
+        WHEN top_map_1_25000 is NULL THEN null
+        WHEN top_map_1_25000 is not NULL THEN
+            jsonb_build_object('key', (top_map_1_25000).key, 'name', (top_map_1_25000).name)
+        END) as top_map_1_25000,
+    water_body,
+    flood_area,
+    water_protection_area,
+    array_to_json(withdrawal_rate) as withdrawal_rate,
+    array_to_json(fluid_discharge) as fluid_discharge,
+    (CASE
+        WHEN irrigation_area is NULL THEN null
+        WHEN irrigation_area is not NULL THEN
+            jsonb_build_object('amount', (irrigation_area).amount, 'unit', (irrigation_area).unit)
+        END) as irrigation_area ,
+    array_to_json(rain_supplement) as rain_supplement
+FROM nlwkn_water_rights.e_usage_locations
+WHERE water_right = $1::int
