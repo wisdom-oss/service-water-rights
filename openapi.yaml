@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: Water Right Location Service
+  description: Water Right Location Service
+  version: 1.0.0
+servers:
+  - url: '/api/water-rights/'
+components:
+  schemas:
+    Point3D:
+      type: array
+      description: Point in 3D space
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id2
+      minItems: 2
+      maxItems: 3
+      items:
+        type: number
+    Geometry:
+      type: object
+      description: GeoJSon geometry
+      required:
+        - type
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#geometry-objects
+      properties:
+        type:
+          type: string
+          enum:
+            - Point
+          description: the geometry type
+    Point:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Geometry"
+        - properties:
+            coordinates:
+              $ref: "#/components/schemas/Point3D"
+
+paths:
+  /:
+    get:
+      description: Get water right locations
+      summary: Get water right locations
+      parameters:
+        - in: query
+          name: in
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+            default: null
+        - in: query
+          name: is_real
+          schema:
+            type: boolean
+            default: null
+
+
+      responses:
+        200:
+          description: The query returns at least one location
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      description: The internal ID of the water right
+                      type: integer
+                    water_right:
+                      description: The water right number used by Cadenza
+                      type: integer
+                    active:
+                      description: The status of the water right
+                      type: boolean
+                    real:
+                      description: The type of the water right
+                      type: boolean
+                    geojson:
+                      $ref: "#/components/schemas/Point"
+        204:
+          description: The filters did not match any location (No content)
+  /details/{water_right_number}:
+    get:
+      responses:
+        200:
+          description: The request was successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Internal database primary key
+                  no:
+                    type: integer
+                    description: The number of the water right
+                  externalId:
+                    type: string
+                    description: The external identifier of the file
+                  fileReference:
+                    type: string
+                    description: The reference to the original pdf file
+                  legalTitle:
+                    type: string
+                    description: The title of the water right
+                  state:
+                    type: string
+                    description: The state of the water right
+                    enum:
+                      - aktiv
+                      - inaktiv
+                      - Wasserbuchblatt
+                  subject:
+                    type: string
+                    nullable: true
+                    description: The subject of the water right
+                  address:
+                    type: string
+                    nullable: true
+                    description: The address of the water right owner
+                  annotation:
+                    type: string
+                    nullable: true
+                    description: The annotation for the water right
+                  bailee:
+                    type: string
+                    nullable: true
+                    description: The bailee for the water right
+                  dateOfChange:
+                    type: string
+                    nullable: true
+                    description: The date of change of the water right
+                  valid:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        nullable: false
+                      until:
+                        type: string
+                        nullable: false
+                  grantingAuthority:
+                    type: string
+                  registeringAuthority:
+                    type: string
+                  waterAuthority:
+                    type: string
+                  locations:
+                    type: array
+                    items:
+                      properties:
+                        id:
+                          type: integer
+                        waterRight:
+                          type: integer
+                        name:
+                          type: string
+                        no:
+                          type: integer
+                        active:
+                          type: boolean
+                        location:
+                          $ref: "#/components/schemas/Point"
+                        basinNo:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                        county:
+                          type: string
+                        euSurveyArea:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                        field:
+                          type: integer
+                        groundwaterVolume:
+                          type: string
+                        legalScope:
+                          type: string
+                        localSubDistrict:
+                          type: string
+                        maintenanceAssociation:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                        municipalArea:
+                          type: object
+                          properties:
+                            key:
+                              type: integer
+                            name:
+                              type: string
+                        plot:
+                          type: string
+                        real:
+                          type: boolean
+                        rivershed:
+                          type: string
+                        serialNo:
+                          type: string
+                        topMap1to25000:
+                          type: object
+                          properties:
+                            key:
+                              type: integer
+                            name:
+                              type: string
+                        waterBody:
+                          type: string
+                        floodArea:
+                          type: string
+                          nullable: true
+                        waterProtectionArea:
+                          type: string
+                          nullable: true
+                        withdrawalRates:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              amount:
+                                type: integer
+                              unit:
+                                type: string
+                              duration:
+                                type: string
+                        fluidDischarge:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              amount:
+                                type: integer
+                              unit:
+                                type: string
+                              duration:
+                                type: string
+                        irrigationArea:
+                          type: object
+                          properties:
+                            amount:
+                              type: integer
+                            unit:
+                              type: string
+                        rainSupplement:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              amount:
+                                type: integer
+                              unit:
+                                type: string
+                              duration:
+                                type: string
+
+
+
+      parameters:
+        - in: path
+          name: water_right_number
+          required: true
+          description: The number of the water right that shall be queried
