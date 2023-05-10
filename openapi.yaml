@@ -241,7 +241,7 @@ paths:
                               unit:
                                 type: string
                               duration:
-                                type: integer
+                                type: string
                         fluidDischarge:
                           type: array
                           items:
@@ -252,7 +252,7 @@ paths:
                               unit:
                                 type: string
                               duration:
-                                type: integer
+                                type: string
                         irrigationArea:
                           type: object
                           properties:
@@ -270,7 +270,7 @@ paths:
                               unit:
                                 type: string
                               duration:
-                                type: integer
+                                type: string
 
 
 
@@ -279,4 +279,3 @@ paths:
           name: water_right_number
           required: true
           description: The number of the water right that shall be queried
-
