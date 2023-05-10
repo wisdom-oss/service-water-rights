@@ -279,4 +279,3 @@ paths:
           name: water_right_number
           required: true
           description: The number of the water right that shall be queried
-

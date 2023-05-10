@@ -1,16 +1,14 @@
-FROM python:3.10-alpine
-LABEL vendor="WISdoM 2.0 Project Group"
-LABEL maintainer="wisdom@uol.de"
-# Do not change this variable. Use the environment variables in docker compose or while starting to modify this value
-ENV CONFIG_HTTP_PORT=5000
-# TODO: Change this variable to the name of your service or use docker compose to set it
-ENV CONFIG_SERVICE_NAME="water-right-locations"
+FROM golang:alpine AS build-service
+COPY src /tmp/src
+WORKDIR /tmp/src
+RUN mkdir -p /tmp/build
+RUN go mod download
+RUN go build -o /tmp/build/app
 
-WORKDIR /service
-COPY . /service
-RUN python -m pip install -r /service/requirements.txt
-RUN python -m pip install gunicorn
-RUN python -m pip install uvicorn
-RUN ln ./configuration/gunicorn.py gunicorn.config.py
-EXPOSE $CONFIG_HTTP_PORT
-ENTRYPOINT ["gunicorn", "-cgunicorn.config.py", "api:service"]
+FROM alpine:latest
+COPY --from=build-service /tmp/build/app /service
+COPY res /res
+RUN apk --no-cache add curl
+ENTRYPOINT ["/service"]
+EXPOSE 8000
+# HEALTHCHECK --interval=5s CMD curl -s -f http://localhost:8000/healthcheck
