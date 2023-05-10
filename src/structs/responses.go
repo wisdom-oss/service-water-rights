@@ -11,6 +11,8 @@ type UsageLocation struct {
 	IsActive bool `json:"active"`
 	// IsReal reflects the reality of the water right location
 	IsReal bool `json:"real"`
+	// Name contains the name for the usage location
+	Name string `json:"name"`
 	// Location contains the GeoJSON representation of the usage location
 	Location geojson.Geometry `json:"geojson"`
 }
