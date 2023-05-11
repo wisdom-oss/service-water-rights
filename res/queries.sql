@@ -145,7 +145,7 @@ SELECT
     name,
     no,
     active,
-    ST_ASGEOJSON(st_transform(location, 4326)) as location,
+    ST_ASGEOJSON(st_transform(location, '+proj=longlat +datum=WGS84 +no_defs +type=crs')) as location,
     (CASE
         WHEN basin_no is NULL THEN null
         WHEN basin_no is not NULL THEN

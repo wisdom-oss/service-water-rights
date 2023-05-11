@@ -3,6 +3,7 @@ package structs
 import (
 	"github.com/jackc/pgtype"
 	geojson "github.com/paulmach/go.geojson"
+	"time"
 )
 
 type UsageLocation struct {
@@ -63,14 +64,14 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		doC = &s
 	}
 
-	var validLower, validUpper *int64
+	var validLower, validUpper *string
 	if r.Valid == nil {
 		validLower = nil
 		validUpper = nil
 	} else {
-		validLowerInt := r.Valid.Lower.Time.UnixMilli()
+		validLowerInt := r.Valid.Lower.Time.Format(time.DateTime)
 		validLower = &validLowerInt
-		validUpperInt := r.Valid.Upper.Time.UnixMilli()
+		validUpperInt := r.Valid.Upper.Time.Format(time.DateTime)
 		validUpper = &validUpperInt
 	}
 	return DetailedWaterRight{
@@ -86,8 +87,8 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		Bailee:        r.Bailee,
 		DateOfChange:  doC,
 		Valid: struct {
-			Lower *int64 `json:"lower"`
-			Upper *int64 `json:"upper"`
+			Lower *string `json:"lower"`
+			Upper *string `json:"upper"`
 		}{
 			Lower: validLower,
 			Upper: validUpper,
@@ -112,8 +113,8 @@ type DetailedWaterRight struct {
 	Bailee        *string `json:"bailee"`
 	DateOfChange  *string `json:"dateOfChange"`
 	Valid         struct {
-		Lower *int64 `json:"lower"`
-		Upper *int64 `json:"upper"`
+		Lower *string `json:"lower"`
+		Upper *string `json:"upper"`
 	} `json:"valid"`
 	GrantingAuthority    *string                  `json:"grantingAuthority"`
 	RegisteringAuthority *string                  `json:"registeringAuthority"`
