@@ -17,7 +17,7 @@ func WaterRightDetails(w http.ResponseWriter, r *http.Request) {
 	l.Debug().Str("waterRight", waterRightNumber).Msg("got water right number from path")
 	l.Info().Str("waterRight", waterRightNumber).Msg("new request for details about water right")
 
-	var waterRightDetails structs.RawWaterRight
+	var waterRightDetails structs.DbWaterRight
 
 	// now query the water right details
 	waterRightRow, err := globals.Queries.Query(
@@ -34,7 +34,7 @@ func WaterRightDetails(w http.ResponseWriter, r *http.Request) {
 
 	err = scan.Row(&waterRightDetails, waterRightRow)
 
-	var usageLocations []structs.DetailedUsageLocation
+	var dbUsageLocations []structs.DbUsageLocation
 	// now query the water right details
 	usageLocationRows, err := globals.Queries.Query(
 		connections.DbConnection,
@@ -48,7 +48,7 @@ func WaterRightDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = scan.Rows(&usageLocations, usageLocationRows)
+	err = scan.Rows(&dbUsageLocations, usageLocationRows)
 
 	if err != nil {
 		l.Error().Str("waterRight", waterRightNumber).Err(err).Msg("error while parsing information about water right")
@@ -57,8 +57,17 @@ func WaterRightDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := waterRightDetails.ToDetailedWaterRight()
-	response.Locations = &usageLocations
+	// convert the locations
+	var usageLocations []structs.DetailedUsageLocation
+
+	for _, l := range dbUsageLocations {
+		usageLocations = append(usageLocations, l.ToDetailedUsageLocation())
+	}
+
+	response := structs.WaterRightDetailResponse{
+		WaterRight: waterRightDetails.ToWaterRight(),
+		Locations:  usageLocations,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
