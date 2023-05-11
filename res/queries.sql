@@ -101,34 +101,34 @@ FROM nlwkn_water_rights.e_usage_locations
 WHERE active = $1 OR active IS NULL;
 
 -- name: get-water-rights-by-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4236)) as location
 FROM nlwkn_water_rights.e_usage_locations
-WHERE ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($1)), st_transform(location, 4326));
+WHERE ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($1)), st_transform(location, 4236));
 
 -- name: get-water-rights-by-reality-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4236)) as location
 FROM nlwkn_water_rights.e_usage_locations
-WHERE real = $1 OR real IS NULL
-AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), st_transform(location, 4326));
+WHERE (real = $1 OR real IS NULL)
+AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), st_transform(location, 4236));
 
 -- name: get-water-rights-by-state-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4236)) as location
 FROM nlwkn_water_rights.e_usage_locations
-WHERE active = $1 OR active IS NULL
-AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), st_transform(location, 4326));
+WHERE (active = $1 OR active IS NULL)
+AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($2)), st_transform(location, 4236));
 
 -- name: get-water-rights-by-reality-and-state
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4236)) as location
 FROM nlwkn_water_rights.e_usage_locations
-WHERE real = $1 OR real IS NULL
+WHERE (real = $1 OR real IS NULL)
 AND active = $2 OR active IS NULL;
 
 -- name: get-water-rights-by-reality-state-and-location
-SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4326)) as location
+SELECT id, water_right, active, real, name, ST_ASGEOJSON(st_transform(location, 4236)) as location
 FROM nlwkn_water_rights.e_usage_locations
-WHERE real = $1 OR real IS NULL
-AND active = $2 OR active IS NULL
-AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($3)), st_transform(location, 4326));
+WHERE( real = $1 OR real IS NULL)
+AND (active = $2 OR active IS NULL)
+AND ST_CONTAINS((SELECT geom FROM geodata.shapes WHERE key = any($3)), st_transform(location, 4236));
 
 -- name: get-water-right-details
 SELECT
@@ -145,7 +145,7 @@ SELECT
     name,
     no,
     active,
-    ST_ASGEOJSON(st_transform(location, '+proj=longlat +datum=WGS84 +no_defs +type=crs')) as location,
+    ST_ASGEOJSON(st_transform(location, 4236)) as location,
     (CASE
         WHEN basin_no is NULL THEN null
         WHEN basin_no is not NULL THEN
