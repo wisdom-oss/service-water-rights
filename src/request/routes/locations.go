@@ -38,7 +38,7 @@ func UsageLocations(w http.ResponseWriter, request *http.Request) {
 			realityFilterSet = false
 		}
 	}
-	activeRightStrings, stateFilterSet = request.URL.Query()["is_real"]
+	activeRightStrings, stateFilterSet = request.URL.Query()["is_active"]
 	if stateFilterSet {
 		if b, err := strconv.ParseBool(activeRightStrings[0]); err == nil {
 			isActiveRight = b
