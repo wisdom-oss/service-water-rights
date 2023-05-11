@@ -3,8 +3,8 @@ package routes
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/blockloop/scan/v2"
 	"github.com/lib/pq"
-	geojson "github.com/paulmach/go.geojson"
 	requestErrors "microservice/request/error"
 	"microservice/structs"
 	"microservice/vars/globals"
@@ -138,39 +138,29 @@ func UsageLocations(w http.ResponseWriter, request *http.Request) {
 		}
 	}(resultRows)
 
-	var locations []structs.UsageLocation
+	var dbUsageLocations []structs.DbUsageLocation
+	err := scan.Rows(&dbUsageLocations, resultRows)
 
-	for resultRows.Next() {
-		var isReal, isActive *bool
-		var internalId, externalId int
-		var name *string
-		var location *geojson.Geometry
-
-		err := resultRows.Scan(&internalId, &externalId, &isActive, &isReal, &name, &location)
-		if err != nil {
-			l.Error().Err(err).Msg("unable to parse database rows into response object")
-			e, _ := requestErrors.WrapInternalError(err)
-			requestErrors.SendError(e, w)
-			return
-		}
-
-		locations = append(locations, structs.UsageLocation{
-			ID:         internalId,
-			WaterRight: externalId,
-			IsActive:   isActive,
-			IsReal:     isReal,
-			Name:       name,
-			Location:   location,
-		})
+	if err != nil {
+		l.Error().Strs("enabledFilters", []string{}).Msg("failed to parse returned database entries")
+		e, _ := requestErrors.WrapInternalError(err)
+		requestErrors.SendError(e, w)
+		return
 	}
 
-	if len(locations) == 0 {
+	if len(dbUsageLocations) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
+	var locations []structs.UsageLocation
+
+	for _, dbLocation := range dbUsageLocations {
+		locations = append(locations, dbLocation.ToUsageLocation())
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(locations)
+	err = json.NewEncoder(w).Encode(locations)
 	if err != nil {
 		l.Error().Err(err).Msg("unable to send response")
 		e, _ := requestErrors.WrapInternalError(err)
