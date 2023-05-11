@@ -63,15 +63,15 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		doC = &s
 	}
 
-	var validLower, validUpper *string
+	var validLower, validUpper *int64
 	if r.Valid == nil {
 		validLower = nil
 		validUpper = nil
 	} else {
-		validLowerString := r.Valid.Lower.Time.String()[:10]
-		validLower = &validLowerString
-		validUpperString := r.Valid.Upper.Time.String()[:10]
-		validUpper = &validUpperString
+		validLowerInt := r.Valid.Lower.Time.Unix()
+		validLower = &validLowerInt
+		validUpperInt := r.Valid.Upper.Time.Unix()
+		validUpper = &validUpperInt
 	}
 	return DetailedWaterRight{
 		Id:            r.Id,
@@ -86,8 +86,8 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		Bailee:        r.Bailee,
 		DateOfChange:  doC,
 		Valid: struct {
-			Lower *string `json:"lower"`
-			Upper *string `json:"upper"`
+			Lower *int64 `json:"lower"`
+			Upper *int64 `json:"upper"`
 		}{
 			Lower: validLower,
 			Upper: validUpper,
@@ -112,8 +112,8 @@ type DetailedWaterRight struct {
 	Bailee        *string `json:"bailee"`
 	DateOfChange  *string `json:"dateOfChange"`
 	Valid         struct {
-		Lower *string `json:"lower"`
-		Upper *string `json:"upper"`
+		Lower *int64 `json:"lower"`
+		Upper *int64 `json:"upper"`
 	} `json:"valid"`
 	GrantingAuthority    *string                  `json:"grantingAuthority"`
 	RegisteringAuthority *string                  `json:"registeringAuthority"`
