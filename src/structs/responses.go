@@ -68,9 +68,9 @@ func (r RawWaterRight) ToDetailedWaterRight() DetailedWaterRight {
 		validLower = nil
 		validUpper = nil
 	} else {
-		validLowerInt := r.Valid.Lower.Time.Unix()
+		validLowerInt := r.Valid.Lower.Time.UnixMilli()
 		validLower = &validLowerInt
-		validUpperInt := r.Valid.Upper.Time.Unix()
+		validUpperInt := r.Valid.Upper.Time.UnixMilli()
 		validUpper = &validUpperInt
 	}
 	return DetailedWaterRight{
