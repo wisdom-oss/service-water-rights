@@ -7,6 +7,13 @@ servers:
   - url: '/api/water-rights/'
 components:
   schemas:
+    NumericKeyedName:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
     Point3D:
       type: array
       description: Point in 3D space
@@ -74,7 +81,7 @@ paths:
                     id:
                       description: The internal ID of the water right
                       type: integer
-                    water_right:
+                    waterRight:
                       description: The water right number used by Cadenza
                       type: integer
                     active:
@@ -143,11 +150,13 @@ paths:
                     type: object
                     properties:
                       from:
-                        type: string
+                        type: integer
                         nullable: false
+                        description: UNIX timestamp
                       until:
-                        type: string
+                        type: integer
                         nullable: false
+                        description: UNIX timestamp
                   grantingAuthority:
                     type: string
                   registeringAuthority:
@@ -171,21 +180,11 @@ paths:
                         location:
                           $ref: "#/components/schemas/Point"
                         basinNo:
-                          type: object
-                          properties:
-                            key:
-                              type: string
-                            name:
-                              type: string
+                          $ref: "#/components/schemas/NumericKeyedName"
                         county:
                           type: string
                         euSurveyArea:
-                          type: object
-                          properties:
-                            key:
-                              type: string
-                            name:
-                              type: string
+                          $ref: "#/components/schemas/NumericKeyedName"
                         field:
                           type: integer
                         groundwaterVolume:
@@ -195,19 +194,9 @@ paths:
                         localSubDistrict:
                           type: string
                         maintenanceAssociation:
-                          type: object
-                          properties:
-                            key:
-                              type: string
-                            name:
-                              type: string
+                          $ref: "#/components/schemas/NumericKeyedName"
                         municipalArea:
-                          type: object
-                          properties:
-                            key:
-                              type: integer
-                            name:
-                              type: string
+                          $ref: "#/components/schemas/NumericKeyedName"
                         plot:
                           type: string
                         real:
@@ -217,12 +206,7 @@ paths:
                         serialNo:
                           type: string
                         topMap1to25000:
-                          type: object
-                          properties:
-                            key:
-                              type: integer
-                            name:
-                              type: string
+                          $ref: "#/components/schemas/NumericKeyedName"
                         waterBody:
                           type: string
                         floodArea:
