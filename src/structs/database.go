@@ -50,8 +50,8 @@ func (nkm *NumericKeyedName) FromJSON(input pgtype.JSON) error {
 
 // DateTimeRange the golang implementation of the postgres datatype Daterange
 type DateTimeRange struct {
-	Lower *int64 `json:"lower"`
-	Upper *int64 `json:"upper"`
+	From  *int64 `json:"from"`
+	Until *int64 `json:"until"`
 }
 
 // DbWaterRight represents a single water right stored in the database
@@ -95,8 +95,8 @@ func (r DbWaterRight) ToWaterRight() WaterRight {
 		lowerBound := r.Valid.Lower.Time.Unix()
 		upperBound := r.Valid.Upper.Time.Unix()
 		validty = &DateTimeRange{
-			Lower: &lowerBound,
-			Upper: &upperBound,
+			From:  &lowerBound,
+			Until: &upperBound,
 		}
 	}
 
