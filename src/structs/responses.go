@@ -26,9 +26,18 @@ type UsageLocation struct {
 // all fields are pointers to allow the usage of nil on every field to mark the
 // absence of the data in the database
 type DetailedUsageLocation struct {
-	// use the already defined UsageLocation as a base and extend it with the
-	// more detailed fields
-	UsageLocation
+	// ID is the internal ID of the water right
+	ID int `json:"id"`
+	// Name contains the name for the usage location
+	Name *string `json:"name"`
+	// WaterRight is the water right number used by Cadenza referenced with the location
+	WaterRight int `json:"waterRight"`
+	// IsActive reflects the status of the water right location
+	IsActive *bool `json:"active"`
+	// IsReal reflects the reality of the water right location
+	IsReal *bool `json:"real"`
+	// Location contains the geojson representation of the location
+	Location               *geojson.Geometry `json:"location"`
 	NlwknID                *int              `json:"no"`
 	BasinNumber            *NumericKeyedName `json:"basinNo"`
 	County                 *string           `json:"county"`

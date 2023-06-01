@@ -297,7 +297,12 @@ func (l DbUsageLocation) ToDetailedUsageLocation() DetailedUsageLocation {
 
 	// now build the response
 	return DetailedUsageLocation{
-		UsageLocation:          l.ToUsageLocation(),
+		ID:                     l.ID,
+		Name:                   l.Name,
+		WaterRight:             l.WaterRight,
+		IsActive:               &l.Active.Bool,
+		IsReal:                 &l.Real.Bool,
+		Location:               l.Location,
 		NlwknID:                l.No,
 		BasinNumber:            basinNumber,
 		County:                 l.County,
