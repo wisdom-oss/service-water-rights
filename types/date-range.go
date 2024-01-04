@@ -64,7 +64,7 @@ func (dr *DateRange) Scan(src interface{}) error {
 		}
 	}
 
-	if matches[1] == "infinity" {
+	if matches[2] == "infinity" {
 		dr.Until = untilInfinityDate
 	} else {
 		dr.Until, err = time.Parse("2006-01-02", matches[2])
