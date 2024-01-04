@@ -1,5 +1,5 @@
 -- name: filter-locations
-ST_CONTAINS(ST_COLLECT(ARRAY((SELECT geom FROM geodata.shapes WHERE key = any($1)))),ST_TRANSFORM(location, 4236));
+ST_CONTAINS(ST_COLLECT(ARRAY((SELECT geom FROM geodata.shapes WHERE key = any($1)))),ST_TRANSFORM(location, 4326));
 
 -- name: filter-reality
 real = $1 OR real IS NULL;
@@ -9,7 +9,7 @@ active = $1 OR active IS NULL;
 
 -- name: extended-usage-locations
 SELECT
-    id, water_right, name, no, active, ST_ASGEOJSON(ST_TRANSFORM(location, 4236)) as location, basin_no, county,
+    id, water_right, name, no, active, ST_ASGEOJSON(ST_TRANSFORM(location, 4326)) as location, basin_no, county,
     eu_survey_area, field,
     groundwater_volume,
     legal_scope, local_sub_district, maintenance_association, municipal_area, plot, real, rivershed, serial_no,
@@ -20,7 +20,7 @@ FROM
 
 -- name: usage-locations
 SELECT
-    id, water_right, name, no, active, ST_ASGEOJSON(ST_TRANSFORM(location, 4236)) as location, real
+    id, water_right, name, no, active, ST_ASGEOJSON(ST_TRANSFORM(location, 4326)) as location, real
 FROM
     nlwkn_water_rights.e_usage_locations;
 
