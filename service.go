@@ -13,8 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
 
-	"microservice/routes"
-
 	"microservice/globals"
 )
 
@@ -34,11 +32,7 @@ func main() {
 	router.Use(httplog.Handler(l))
 	// now add the authorization middleware to the router
 	router.Use(wisdomMiddleware.Authorization(globals.AuthorizationConfiguration, globals.ServiceName))
-	// now mount the admin router
-	router.HandleFunc("/", routes.BasicHandler)
-	router.HandleFunc("/internal-error", routes.BasicWithErrorHandling)
 
-	// now boot up the service
 	// Configure the HTTP server
 	server := &http.Server{
 		Addr:         fmt.Sprintf("0.0.0.0:%s", globals.Environment["LISTEN_PORT"]),
