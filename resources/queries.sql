@@ -1,4 +1,4 @@
--- name: filter-location
+-- name: filter-locations
 ST_CONTAINS(ST_COLLECT(ARRAY((SELECT geom FROM geodata.shapes WHERE key = any($1)))),ST_TRANSFORM(location, 4236));
 
 -- name: filter-reality
