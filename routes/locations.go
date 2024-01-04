@@ -58,9 +58,9 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if len(arguments) == 0 {
-			filter = fmt.Sprintf("WHERE %s", filter)
+			filter = fmt.Sprintf(" WHERE %s", filter)
 		} else {
-			filter = fmt.Sprintf("AND %s", filter)
+			filter = fmt.Sprintf(" AND %s", filter)
 		}
 
 		// now set the correct argument number
@@ -78,9 +78,9 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if len(arguments) == 0 {
-			filter = fmt.Sprintf("WHERE %s", filter)
+			filter = fmt.Sprintf(" WHERE %s", filter)
 		} else {
-			filter = fmt.Sprintf("AND %s", filter)
+			filter = fmt.Sprintf(" AND %s", filter)
 		}
 
 		// now set the correct argument number
@@ -98,9 +98,9 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if len(arguments) == 0 {
-			filter = fmt.Sprintf("WHERE %s", filter)
+			filter = fmt.Sprintf(" WHERE %s", filter)
 		} else {
-			filter = fmt.Sprintf("AND %s", filter)
+			filter = fmt.Sprintf(" AND %s", filter)
 		}
 
 		// now set the correct argument number
