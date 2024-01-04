@@ -34,7 +34,7 @@ func main() {
 	// now add the authorization middleware to the router
 	router.Use(wisdomMiddleware.Authorization(globals.AuthorizationConfiguration, globals.ServiceName))
 	router.Get("/", routes.UsageLocations)
-	router.Get("/details", routes.WaterRights)
+	// router.Get("/details", routes.WaterRights)
 	router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 	// Configure the HTTP server
 	server := &http.Server{
