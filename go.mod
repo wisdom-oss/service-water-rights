@@ -3,6 +3,7 @@ module microservice
 go 1.20
 
 require (
+	github.com/blockloop/scan/v2 v2.5.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/httplog v0.3.0
 	github.com/joho/godotenv v1.5.1
@@ -21,5 +22,6 @@ require (
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/wisdom-oss/microservice-utils v1.0.0 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 )
