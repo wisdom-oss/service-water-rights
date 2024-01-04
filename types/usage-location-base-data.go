@@ -24,5 +24,5 @@ type UsageLocationBaseData struct {
 	IsReal *bool `json:"real,omitempty" db:"real"`
 
 	// Location contains the usage location's location encoded as GeoJSON object
-	Location *geojson.Geometry `json:"geojson,omitempty" db:"location"`
+	Location *geojson.Geometry `json:"location,omitempty" db:"location"`
 }
