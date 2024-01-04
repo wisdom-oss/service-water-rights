@@ -17,8 +17,8 @@ import (
 // locations.
 func WaterRights(w http.ResponseWriter, r *http.Request) {
 	// get the error handler and the status channel
-	errorHandler := r.Context().Value(wisdomMiddleware.ERROR_CHANNEL_NAME).(chan interface{})
-	statusChannel := r.Context().Value(wisdomMiddleware.STATUS_CHANNEL_NAME).(chan bool)
+	errorHandler := r.Context().Value(wisdomMiddleware.ERROR_CHANNEL_NAME).(chan<- interface{})
+	statusChannel := r.Context().Value(wisdomMiddleware.STATUS_CHANNEL_NAME).(<-chan bool)
 
 	// now query the database for all water rights available in the database
 	rows, err := globals.SqlQueries.Query(globals.Db, "water-rights")
