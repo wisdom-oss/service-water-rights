@@ -58,6 +58,5 @@ type WaterRight struct {
 
 	// UsageLocations contains all usage locations that are listed for this
 	// water right
-	// TODO: Replace with extended water usage location array
-	UsageLocations interface{} `json:"locations" db:"-"`
+	UsageLocations []UsageLocation `json:"locations" db:"-"`
 }
