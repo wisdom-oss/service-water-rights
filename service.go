@@ -14,6 +14,7 @@ import (
 	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
 
 	"microservice/globals"
+	"microservice/routes"
 )
 
 // the main function bootstraps the http server and handlers used for this
@@ -32,7 +33,9 @@ func main() {
 	router.Use(httplog.Handler(l))
 	// now add the authorization middleware to the router
 	router.Use(wisdomMiddleware.Authorization(globals.AuthorizationConfiguration, globals.ServiceName))
-
+	router.Get("/", routes.UsageLocations)
+	router.Get("/details", routes.WaterRights)
+	router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 	// Configure the HTTP server
 	server := &http.Server{
 		Addr:         fmt.Sprintf("0.0.0.0:%s", globals.Environment["LISTEN_PORT"]),
