@@ -11,7 +11,8 @@ import (
 
 const dateRangeRegEx = `^\[(\d{4}-\d{2}-\d{2}|[+-]?infinity),(\d{4}-\d{2}-\d{2}|[+-]?infinity)?\)$`
 
-var infinityDate = time.Date(9999, 12, 31, 0, 0, 0, 0, time.UTC)
+var fromInfinityDate = time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)
+var untilInfinityDate = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
 
 type DateRange struct {
 	From  time.Time `json:"from"`
@@ -55,7 +56,7 @@ func (dr *DateRange) Scan(src interface{}) error {
 	}
 
 	if matches[1] == "infinity" {
-		dr.From = infinityDate
+		dr.From = fromInfinityDate
 	} else {
 		dr.From, err = time.Parse("2006-01-02", matches[1])
 		if err != nil {
@@ -64,7 +65,7 @@ func (dr *DateRange) Scan(src interface{}) error {
 	}
 
 	if matches[1] == "infinity" {
-		dr.Until = infinityDate
+		dr.Until = untilInfinityDate
 	} else {
 		dr.Until, err = time.Parse("2006-01-02", matches[2])
 		if err != nil {
