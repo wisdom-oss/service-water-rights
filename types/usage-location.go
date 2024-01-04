@@ -29,7 +29,7 @@ type UsageLocation struct {
 
 	// LocalSubDistrict contains the County's district name the
 	// usage location is placed in
-	LocalSubDistrict string `json:"localSubDistrict,omitempty" db:"local_sub_district"`
+	LocalSubDistrict *string `json:"localSubDistrict,omitempty" db:"local_sub_district"`
 
 	// MaintenanceAssociation contains the association responsible for
 	// maintaining the usage location
