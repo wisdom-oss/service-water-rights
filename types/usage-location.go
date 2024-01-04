@@ -67,7 +67,7 @@ type UsageLocation struct {
 	FluidDischarge *IntervalRates `json:"fluidDischargeRates,omitempty" db:"fluid_discharge"`
 
 	// TODO: Extend description
-	IrrigationArea *IntervalRates `json:"irrigationArea,omitempty" db:"irrigation_area"`
+	IrrigationArea *Rate `json:"irrigationArea,omitempty" db:"irrigation_area"`
 
 	// TODO: Extend description
 	RainSupplement *IntervalRates `json:"rainSupplement,omitempty" db:"rain_supplement"`
