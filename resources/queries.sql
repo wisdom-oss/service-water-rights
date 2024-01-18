@@ -2,10 +2,10 @@
 ST_CONTAINS(ST_COLLECT(ARRAY((SELECT geom FROM geodata.shapes WHERE key = any($1)))),ST_TRANSFORM(location, 4326));
 
 -- name: filter-reality
-real = $1 OR real IS NULL;
+(real = $1 OR real IS NULL);
 
 -- name: filter-state
-active = $1 OR active IS NULL;
+(active = $1 OR active IS NULL);
 
 -- name: extended-usage-locations
 SELECT

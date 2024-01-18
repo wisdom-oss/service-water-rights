@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -16,7 +17,8 @@ const intervalRateRegEx = `\(([+-]?\d+\.?\d?),\\"([\w\s²³'"]+)\\",(?:\\")?(\d{
 // IntervalRate reflects a rate that may only be used Every duration.
 type IntervalRate struct {
 	Rate
-	Every time.Duration `json:"interval"`
+	Every    time.Duration       `json:"interval"`
+	Interval pqinterval.Interval `json:"-"`
 }
 
 func (ir *IntervalRate) Scan(src interface{}) error {
@@ -52,6 +54,7 @@ func (ir *IntervalRate) Scan(src interface{}) error {
 	if err != nil {
 		return fmt.Errorf("unable to create entry since the interval could not be parsed correctly: %w", err)
 	}
+	ir.Interval = ival
 	dur, err := ival.Duration()
 	if err != nil {
 		return fmt.Errorf("unable to create entry since the duration could not be converted to duration correctly"+
@@ -59,4 +62,17 @@ func (ir *IntervalRate) Scan(src interface{}) error {
 	}
 	ir.Every = dur
 	return nil
+}
+
+func (ir IntervalRate) MarshalJSON() ([]byte, error) {
+	type Output struct {
+		Rate
+		Interval string `json:"interval"`
+	}
+	var val interface{}
+	strc := Output{Rate: ir.Rate}
+	val, _ = ir.Interval.Value()
+	interval := val.(string)
+	strc.Interval = interval
+	return json.Marshal(strc)
 }
