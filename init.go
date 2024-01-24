@@ -1,12 +1,14 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	wisdomType "github.com/wisdom-oss/commonTypes"
 
 	"github.com/joho/godotenv"
@@ -16,29 +18,51 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 
-	"microservice/globals"
-
-	_ "github.com/lib/pq"
+	"github.com/wisdom-oss/service-water-rights/globals"
 )
 
-var l zerolog.Logger
-
-// defaultAuth contains the default authentication configuration if no file
-// is present (which shouldn't be the case). it only allows named users
-// access to this service who use the same group as the service name
-var defaultAuth = wisdomType.AuthorizationConfiguration{
+// DefaultAuth contains the default authentication configuration if no file
+// is present. it only allows named users access to this service who use the
+// same group as the service name
+var DefaultAuth = wisdomType.AuthorizationConfiguration{
 	Enabled:                   true,
 	RequireUserIdentification: true,
 	RequiredUserGroup:         globals.ServiceName,
 }
 
-// this init functions sets up the logger which is used for this microservice
+// customTypes contains the PostgreSQL names of the custom types that are used
+// by the microservice. these custom types are registered during the execution
+// of connectDatabase.
+var customTypes = []string{}
+
+var initLogger = log.With().Bool("startup", true).Logger()
+
+// init is executed at every startup of the microservice and is always executed
+// before main
 func init() {
 	// load the variables found in the .env file into the process environment
 	err := godotenv.Load()
 	if err != nil {
-		log.Debug().Msg("no .env files found")
+		initLogger.Debug().Msg("no .env files found")
 	}
+
+	configureLogger()
+	loadServiceConfiguration()
+	processErrorFile()
+	setupAuthorization()
+	connectDatabase()
+	loadPreparedQueries()
+
+	initLogger.Info().Msg("initialization process finished")
+
+}
+
+// configureLogger handles the configuration of the logger used in the
+// microservice. it reads the logging level from the `LOG_LEVEL` environment
+// variable and sets it according to the parsed logging level. if an invalid
+// value is supplied or no level is supplied, the service defaults to the
+// `INFO` level
+func configureLogger() {
 	// set the time format to unix timestamps to allow easier machine handling
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// allow the logger to create an error stack for the logs
@@ -60,140 +84,178 @@ func init() {
 		if err != nil {
 			// since an error occurred while parsing the logging level, use info
 			loggingLevel = zerolog.InfoLevel
-			log.Warn().Msg("unable to parse value from environment. using info")
+			initLogger.Warn().Msg("unable to parse value from environment. using info")
 		}
 	}
 	// since now a logging level is set, configure the logger
 	zerolog.SetGlobalLevel(loggingLevel)
-	l = log.With().Str("step", "init").Logger()
 }
 
-// this function initializes the environment variables used in this microservice
-// and validates that the configured variables are present.
-func init() {
-	l.Info().Msg("loading environment for microservice")
-
+// loadServiceConfiguration handles loading the `environment.json` file which
+// describes which environment variables are needed for the service to function
+// and what variables are optional and their default values
+func loadServiceConfiguration() {
+	initLogger.Info().Msg("loading service configuration from environment")
 	// now check if the default location for the environment configuration
 	// was changed via the `ENV_CONFIG_LOCATION` variable
 	location, locationChanged := os.LookupEnv("ENV_CONFIG_LOCATION")
 	if !locationChanged {
 		// since the location has not changed, set the default value
 		location = "./environment.json"
-		l.Debug().Msg("location for environment config not changed")
+		initLogger.Debug().Msg("location for environment config not changed")
 	}
-	l.Info().Str("path", location).Msg("loading environment configuration file")
+	initLogger.Debug().Str("path", location).Msg("loading environment requirements file")
 	var c wisdomType.EnvironmentConfiguration
 	err := c.PopulateFromFilePath(location)
 	if err != nil {
-		l.Fatal().Err(err).Msg("unable to load environment configuration")
+		initLogger.Fatal().Err(err).Msg("unable to load environment requirements file")
 	}
-	l.Info().Msg("successfully loaded environment configuration")
-
-	// since the configuration was successfully loaded, check the required
-	// environment variables
-	l.Info().Msg("validating configuration against current environment")
+	initLogger.Info().Msg("validating environment variables")
 	globals.Environment, err = c.ParseEnvironment()
 	if err != nil {
-		l.Fatal().Err(err).Msg("error while parsing environment")
+		initLogger.Fatal().Err(err).Msg("environment validation failed")
 	}
+	initLogger.Info().Msg("loaded service configuration from environment")
 }
 
-// this function now loads the prepared errors from the error file and parses
-// them into wisdom errors
-func init() {
-	l.Info().Msg("loading predefined errors")
-	// check if the error file location was set
+// processErrorFile handles the loading and processing of the predefined errors
+// in the `errors.json` file located in `resources`.
+func processErrorFile() {
+	initLogger.Info().Msg("processing predefined errors")
 	filePath, isSet := globals.Environment["ERROR_FILE_LOCATION"]
 	if !isSet {
-		l.Fatal().Msg("no error file location set in environment")
+		initLogger.Fatal().Msg("no error file location set in environment")
 	}
-	// now check if the path is not empty
-	if filePath == "" || strings.TrimSpace(filePath) == "" {
-		l.Fatal().Msg("empty path supplied for error file location")
+	if strings.TrimSpace(filePath) == "" {
+		initLogger.Fatal().Msg("empty path supplied for error file location")
 	}
-
-	// since the path is not empty, try to open it
-	file, err := os.Open(filePath)
+	errorFile, err := os.Open(filePath)
 	if err != nil {
-		l.Fatal().Err(err).Msg("unable to open error configuration file")
+		initLogger.Fatal().Err(err).Msg("unable to open file containing predefined errors")
 	}
 
 	var errors []wisdomType.WISdoMError
-	err = json.NewDecoder(file).Decode(&errors)
+	err = json.NewDecoder(errorFile).Decode(&errors)
 	if err != nil {
-		l.Fatal().Err(err).Msg("unable to load error configuration file")
+		initLogger.Fatal().Err(err).Msg("unable to unmarshal error file into go structs")
 	}
-	for _, e := range errors {
-		e.InferHttpStatusText()
-		globals.Errors[e.ErrorCode] = e
+
+	// now iterate over the errors to generate the global error map
+	for _, parsedError := range errors {
+		parsedError.InferHttpStatusText()
+		globals.Errors[parsedError.ErrorCode] = parsedError
 	}
-	l.Info().Msg("loaded predefined errors")
+	initLogger.Info().Msg("loaded predefined errors")
 }
 
-// this function loads the externally defined authorization configuration
-// and overwrites the default options laid out here
-func init() {
-	l.Info().Msg("loading authorization configuration")
+// setupAuthorization configures the authorization requirements for the
+// microservice
+//
+// It first checks if the authorization configuration file location is set in
+// the environment variables.
+// If it is not set, it logs a warning message and uses the default
+// authorization configuration.
+// If the path is set but empty, it logs a warning message and uses the default
+// configuration.
+// If the path is not empty, it tries to populate the authorization
+// configuration from the file.
+// If it encounters an error while populating the configuration, it logs a
+// warning message and uses the default configuration.
+// Finally, it logs a message indicating that the authorization requirements
+// have been configured.
+func setupAuthorization() {
+	initLogger.Info().Msg("configuring authorization requirements")
 	filePath, isSet := globals.Environment["AUTH_CONFIG_FILE_LOCATION"]
 	if !isSet {
-		l.Warn().Msg("no auth file location set in environment. using default")
-		globals.AuthorizationConfiguration = defaultAuth
-		return
-	}
-	// now check if the path is not empty
-	if filePath == "" || strings.TrimSpace(filePath) == "" {
-		l.Warn().Msg("empty path supplied for error file location. using default")
-		globals.AuthorizationConfiguration = defaultAuth
+		initLogger.Warn().Interface("defaultConfig", DefaultAuth).Msg("no authorization configuration file found. using default")
+		globals.AuthorizationConfiguration = DefaultAuth
 		return
 	}
 
-	// since a file was found, read from the file path
-	var authConfig wisdomType.AuthorizationConfiguration
-	err := authConfig.PopulateFromFilePath(filePath)
+	if strings.TrimSpace(filePath) == "" {
+		initLogger.Warn().Interface("defaultConfig", DefaultAuth).Msg("empty path set for authorization configuration file. using default")
+		globals.AuthorizationConfiguration = DefaultAuth
+		return
+	}
+
+	err := globals.AuthorizationConfiguration.PopulateFromFilePath(filePath)
 	if err != nil {
-		l.Error().Err(err).Msg("unable to parse authorization configuration. ussing default")
-		globals.AuthorizationConfiguration = defaultAuth
+		initLogger.Warn().Err(err).Msg("unable to populate configuration from detected file. using default")
+		globals.AuthorizationConfiguration = DefaultAuth
 		return
 	}
 
-	globals.AuthorizationConfiguration = authConfig
-	l.Info().Msg("loaded authorization configuration")
+	initLogger.Info().Msg("configured authorization requirements")
 }
 
-// this function opens a global connection to the postgres database used for
-// this microservice and loads the prepared sql queries.
-func init() {
-	l.Info().Msg("preparing global database connection")
-	// build a dsn from the environment variables
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=wisdom sslmode=disable",
-		globals.Environment["PG_HOST"], globals.Environment["PG_PORT"], globals.Environment["PG_USER"],
-		globals.Environment["PG_PASS"])
+// connectDatabase uses the previously read environment variables to connect the
+// microservice to the PostgreSQL database used as the backend for all WISdoM
+// services
+func connectDatabase() {
+	initLogger.Info().Msg("connecting to the database")
 
-	// now open the connection to the database
+	address := fmt.Sprintf("postgres://%s:%s@%s:%s/wisdom",
+		globals.Environment["PG_USER"], globals.Environment["PG_PASS"],
+		globals.Environment["PG_HOST"], globals.Environment["PG_PORT"])
+
 	var err error
-	globals.Db, err = sql.Open("postgres", dsn)
+	config, err := pgxpool.ParseConfig(address)
 	if err != nil {
-		l.Fatal().Err(err).Msg("failed to open database connection")
+		initLogger.Fatal().Err(err).Msg("unable to create base configuration for connection pool")
 	}
-	l.Info().Msg("opened database connection")
-
-	// now ping the database to check the connectivity
-	l.Info().Msg("pinging the database to verify connectivity")
-	err = globals.Db.Ping()
+	config.AfterConnect = registerCustomTypes
+	globals.Db, err = pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		l.Fatal().Err(err).Msg("connectivity verification failed")
+		initLogger.Fatal().Err(err).Msg("unable to create database connection pool")
 	}
-	l.Info().Msg("database connection verified. open and working")
+	err = globals.Db.Ping(context.Background())
+	if err != nil {
+		initLogger.Fatal().Err(err).Msg("unable to verify the connection to the database")
+	}
+	initLogger.Info().Msg("database connection established")
+}
 
-	// now load the prepared sql queries
-	l.Info().Msg("loading sql queries")
+// loadPreparedQueries loads the prepared SQL queries from a file specified by
+// the QUERY_FILE_LOCATION environment variable.
+// It initializes the SqlQueries variable with the loaded queries.
+// If there is an error loading the queries, it logs a fatal error and the
+// program terminates.
+// This function is typically called during the startup of the microservice.
+func loadPreparedQueries() {
+	initLogger.Info().Msg("loading prepared sql queries")
+	var err error
 	globals.SqlQueries, err = dotsql.LoadFromFile(globals.Environment["QUERY_FILE_LOCATION"])
 	if err != nil {
-		l.Fatal().Err(err).Msg("unable to load queries used by the service")
+		initLogger.Fatal().Err(err).Msg("failed to load prepared queries")
 	}
 }
 
-// this function just logs that the init process is finished
-func init() {
-	l.Info().Msg("finished initialization")
+// registerCustomTypes registers custom types in the database connection.
+// It takes the context and a connection object as arguments.
+// It iterates over the custom types array and loads each custom type
+// from the database. Then, it registers both the custom type and the
+// array version of the type using the connection's TypeMap.
+// If any error occurs during the process, it logs an error and returns
+// the error. Otherwise, it returns nil.
+func registerCustomTypes(ctx context.Context, conn *pgx.Conn) error {
+	for _, customTypeName := range customTypes {
+		// create the array version of the type
+		customTypeArray := fmt.Sprintf("%s[]", customTypeName)
+		// now load the custom type from the database
+		customType, err := conn.LoadType(ctx, customTypeName)
+		if err != nil {
+			initLogger.Error().Err(err).Str("type", customTypeName).Msg("unable to load custom type from the database")
+			return err
+		}
+		conn.TypeMap().RegisterType(customType)
+
+		// now load the array version of the type
+		customType, err = conn.LoadType(ctx, customTypeArray)
+		if err != nil {
+			initLogger.Error().Err(err).Str("type", customTypeArray).Msg("unable to load custom type from the database")
+			return err
+		}
+		conn.TypeMap().RegisterType(customType)
+	}
+	return nil
 }
