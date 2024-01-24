@@ -14,6 +14,7 @@ require (
 	github.com/rs/zerolog v1.29.1
 	github.com/wisdom-oss/commonTypes v1.0.0
 	github.com/wisdom-oss/microservice-middlewares/v3 v3.0.0
+	golang.org/x/net v0.10.0
 
 )
 
