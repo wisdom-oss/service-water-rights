@@ -1,3 +1,5 @@
+//go:build ignore
+
 package routes
 
 import (
@@ -6,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/blockloop/scan/v2"
 	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
 
 	"microservice/globals"

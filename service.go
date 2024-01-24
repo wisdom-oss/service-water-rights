@@ -31,6 +31,8 @@ func main() {
 	// add a middleware that uses the x-real-ip or x-forwarded-for headers to
 	// show the real ip of the person sending a request
 	router.Use(middleware.RealIP)
+	// add a middleware for allowing heartbeats to be sent to the service
+	router.Use(middleware.Heartbeat("/ping"))
 	// now configure the logging for the service and add it to the router
 	httplog.Configure(httplog.Options{
 		JSON:    true,
@@ -44,7 +46,7 @@ func main() {
 
 	// now add the routes and their path specifications to the router
 	router.Get("/", routes.UsageLocations)
-	router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
+	//router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 
 	// now configure the http2c and the http server
 	http2Server := &http2.Server{}

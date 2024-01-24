@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/blockloop/scan/v2"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
 
-	"microservice/globals"
-	"microservice/types"
+	"github.com/wisdom-oss/service-water-rights/types"
+
+	"github.com/wisdom-oss/service-water-rights/globals"
 )
 
 const (
@@ -114,20 +116,12 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	queryString = strings.ReplaceAll(queryString, ";", "")
 	queryString += ";"
 
-	// now prepare the query
-	query, err := globals.Db.Prepare(queryString)
-	if err != nil {
-		errorHandler <- fmt.Errorf("unable to preparse query: %w", err)
-		<-statusChannel
-		return
-	}
-
-	var rows *sql.Rows
+	var rows pgx.Rows
 	// now query the database with the correct number of arguments
 	if len(arguments) == 0 {
-		rows, err = query.Query()
+		rows, err = globals.Db.Query(r.Context(), queryString)
 	} else {
-		rows, err = query.Query(arguments...)
+		rows, err = globals.Db.Query(r.Context(), queryString, arguments...)
 	}
 
 	if err != nil {
@@ -137,7 +131,7 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var locations []types.UsageLocation
-	err = scan.Rows(&locations, rows)
+	err = pgxscan.ScanAll(&locations, rows)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			w.WriteHeader(204)
