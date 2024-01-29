@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
 
 	"github.com/wisdom-oss/service-water-rights/types"
@@ -133,12 +131,13 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	var locations []types.UsageLocation
 	err = pgxscan.ScanAll(&locations, rows)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			w.WriteHeader(204)
-			return
-		}
 		errorHandler <- fmt.Errorf("unable to parse query result: %w", err)
 		<-statusChannel
+		return
+	}
+
+	if len(locations) == 0 {
+		w.WriteHeader(204)
 		return
 	}
 

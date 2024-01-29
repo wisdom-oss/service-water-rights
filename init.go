@@ -33,7 +33,16 @@ var DefaultAuth = wisdomType.AuthorizationConfiguration{
 // customTypes contains the PostgreSQL names of the custom types that are used
 // by the microservice. these custom types are registered during the execution
 // of connectDatabase.
-var customTypes = []string{}
+var customTypes = []string{
+	"water_rights.numeric_keyed_value",
+	"water_rights.quantity",
+	"water_rights.rate",
+	"water_rights.dam_target",
+	"water_rights.land_record",
+	"water_rights.value_range",
+	"water_rights.legal_department",
+	"water_rights.injection_limit",
+}
 
 var initLogger = log.With().Bool("startup", true).Logger()
 

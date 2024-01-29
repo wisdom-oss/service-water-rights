@@ -42,9 +42,9 @@ $$
     BEGIN
         CREATE TYPE water_rights.rate AS
         (
-            key  numeric,
-            name text,
-            per  interval
+            value numeric,
+            unit  text,
+            per   interval
         );
     EXCEPTION
         WHEN DUPLICATE_OBJECT THEN NULL;
@@ -80,21 +80,21 @@ $$
     END;
 $$;
 
--- name: 06
+-- name: 07
 DO
 $$
     BEGIN
-        CREATE TYPE water_rights.value_range AS
+        CREATE TYPE water_rights.injection_limit AS
         (
-            district text,
-            field    int8
+            substance text,
+            quantity  water_rights.quantity
         );
     EXCEPTION
         WHEN DUPLICATE_OBJECT THEN NULL;
     END;
 $$;
 
--- name: 07
+-- name: 08
 DO
 $$
     BEGIN
@@ -114,9 +114,10 @@ $$
     END;
 $$;
 
--- name: 08
+-- name: 09
 CREATE TABLE IF NOT EXISTS water_rights.rights
 (
+    -- the id acts directly as the "no" value from the imported water rights
     id                    int8 NOT NULL PRIMARY KEY,
     external_identifier   text                            DEFAULT NULL,
     file_reference        text                            DEFAULT NULL,
@@ -135,40 +136,44 @@ CREATE TABLE IF NOT EXISTS water_rights.rights
     granting_authority    text                            DEFAULT NULL
 );
 
--- name: 09
+-- name: 10
 CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 (
     id                      bigserial PRIMARY KEY,
-    no                      int8                                                  DEFAULT NULL,
-    serial                  text                                                  DEFAULT NULL,
-    water_right             int8 REFERENCES water_rights.rights (id) MATCH SIMPLE DEFAULT NULL,
-    active                  bool                                                  DEFAULT NULL,
-    real                    bool                                                  DEFAULT NULL,
-    name                    text                                                  DEFAULT NULL,
-    legal_purpose           text[2]                                               DEFAULT NULL,
-    map_excerpt             water_rights.numeric_keyed_value                      DEFAULT NULL,
-    municipal_area          water_rights.numeric_keyed_value                      DEFAULT NULL,
-    county                  text                                                  DEFAULT NULL,
-    land_record             water_rights.land_record                              DEFAULT NULL,
-    plot                    text                                                  DEFAULT NULL,
-    maintenance_association water_rights.numeric_keyed_value                      DEFAULT NULL,
-    eu_survey_area          water_rights.numeric_keyed_value                      DEFAULT NULL,
-    catchment_area_code     water_rights.numeric_keyed_value                      DEFAULT NULL,
-    regulation_citation     text                                                  DEFAULT NULL,
-    withdrawal_rates        water_rights.rate[]                                   DEFAULT NULL,
-    pumping_rates           water_rights.rate[]                                   DEFAULT NULL,
-    injection_rates         water_rights.rate[]                                   DEFAULT NULL,
-    waste_water_flow_volume water_rights.rate[]                                   DEFAULT NULL,
-    river_basin             text                                                  DEFAULT NULL,
-    groundwater_body        text                                                  DEFAULT NULL,
-    water_body              text                                                  DEFAULT NULL,
-    flood_area              text                                                  DEFAULT NULL,
-    water_protection_area   text                                                  DEFAULT NULL,
-    dam_target_levels       water_rights.dam_target                               DEFAULT NULL,
-    fluid_discharge         water_rights.rate[]                                   DEFAULT NULL,
-    rain_supplement         water_rights.rate[]                                   DEFAULT NULL,
-    irrigation_area         water_rights.quantity                                 DEFAULT NULL,
-    ph_values               numrange                                              DEFAULT NULL,
-    injection_limits        text[][2]                                             DEFAULT NULL,
-    location                geometry                                              DEFAULT NULL
+    no                      int8                             DEFAULT NULL,
+    serial                  text                             DEFAULT NULL,
+    water_right             int8 REFERENCES water_rights.rights (id) MATCH FULL NOT NULL,
+    legal_department        water_rights.legal_department                       NOT NULL,
+    active                  bool                             DEFAULT NULL,
+    real                    bool                             DEFAULT NULL,
+    name                    text                             DEFAULT NULL,
+    legal_purpose           text[2]                          DEFAULT NULL,
+    map_excerpt             water_rights.numeric_keyed_value DEFAULT NULL,
+    municipal_area          water_rights.numeric_keyed_value DEFAULT NULL,
+    county                  text                             DEFAULT NULL,
+    land_record             water_rights.land_record         DEFAULT NULL,
+    plot                    text                             DEFAULT NULL,
+    maintenance_association water_rights.numeric_keyed_value DEFAULT NULL,
+    eu_survey_area          water_rights.numeric_keyed_value DEFAULT NULL,
+    catchment_area_code     water_rights.numeric_keyed_value DEFAULT NULL,
+    regulation_citation     text                             DEFAULT NULL,
+    withdrawal_rates        water_rights.rate[]              DEFAULT NULL,
+    pumping_rates           water_rights.rate[]              DEFAULT NULL,
+    injection_rates         water_rights.rate[]              DEFAULT NULL,
+    waste_water_flow_volume water_rights.rate[]              DEFAULT NULL,
+    river_basin             text                             DEFAULT NULL,
+    groundwater_body        text                             DEFAULT NULL,
+    water_body              text                             DEFAULT NULL,
+    flood_area              text                             DEFAULT NULL,
+    water_protection_area   text                             DEFAULT NULL,
+    dam_target_levels       water_rights.dam_target          DEFAULT NULL,
+    fluid_discharge         water_rights.rate[]              DEFAULT NULL,
+    rain_supplement         water_rights.rate[]              DEFAULT NULL,
+    irrigation_area         water_rights.quantity            DEFAULT NULL,
+    ph_values               numrange                         DEFAULT NULL,
+    injection_limits        water_rights.injection_limit[]   DEFAULT NULL,
+    location                geometry                         DEFAULT NULL
 );
+
+-- name: 11
+COMMENT ON COLUMN water_rights.rights.id IS 'the id acts directly as the "no" value from the imported water rights';
