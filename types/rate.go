@@ -7,7 +7,7 @@ import "github.com/jackc/pgx/v5/pgtype"
 // numeric value and a text unit.
 // The per interval is represented by the `Per` field of type `pgtype.Interval`.
 // Together, they define the rate of change or occurrence for a given quantity.
-// Refer to the `Quantity` struct for more information on the quantity
+// Refer to the `types.Quantity` struct for more information on the quantity
 // representation.
 // Example usage:
 //

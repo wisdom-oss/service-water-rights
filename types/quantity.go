@@ -1,7 +1,9 @@
 package types
 
+import "github.com/jackc/pgx/v5/pgtype"
+
 // Quantity represents a numerical quantity with a unit
 type Quantity struct {
-	Value *float64 `json:"value,omitempty"`
-	Unit  *string  `json:"unit,omitempty"`
+	Value pgtype.Numeric `json:"value,omitempty"`
+	Unit  pgtype.Text    `json:"unit,omitempty"`
 }

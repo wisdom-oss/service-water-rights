@@ -133,7 +133,8 @@ CREATE TABLE IF NOT EXISTS water_rights.rights
     last_change           date                            DEFAULT NULL,
     water_authority       text                            DEFAULT NULL,
     registering_authority text                            DEFAULT NULL,
-    granting_authority    text                            DEFAULT NULL
+    granting_authority    text                            DEFAULT NULL,
+    annotation            text                            DEFAULT NULL
 );
 
 -- name: 10

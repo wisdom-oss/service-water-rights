@@ -5,15 +5,18 @@ import (
 )
 
 type UsageLocation struct {
-	// ID identifies the usage location
+	// ID identifies the usage location in the database
 	ID pgtype.Int8 `json:"id,omitempty" db:"id"`
+
+	// LocationNumber is the usage locations id issued by the cadenza database
+	LocationNumber *pgtype.Int8 `json:"no" db:"no"`
 
 	// SerialID enumerates the usage location inside a water right
 	SerialID *pgtype.Text `json:"serial,omitempty" db:"no"`
 
 	// WaterRightID shows which water right is associated with this usage
 	// location
-	WaterRightID *pgtype.Int8 `json:"waterRight,omitempty" db:"water_right"`
+	WaterRightID pgtype.Int8 `json:"waterRight,omitempty" db:"water_right"`
 
 	// Active shows if the usage location is currently used
 	Active *pgtype.Bool `json:"active,omitempty" db:"active"`
@@ -111,7 +114,7 @@ type UsageLocation struct {
 	PHValues *pgtype.Range[pgtype.Numeric] `json:"phValues,omitempty" db:"ph_values"`
 
 	// InjectionLimits contains information about injection limitations
-	InjectionLimits [][2]interface{} `json:"injectionLimits,omitempty" db:"injection_limit"`
+	InjectionLimits []InjectionLimit `json:"injectionLimits,omitempty" db:"injection_limit"`
 
 	// Location contains the GeoJSON representation of the usage locations
 	// location
