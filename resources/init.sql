@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS water_rights.usage_locations
     irrigation_area         water_rights.quantity            DEFAULT NULL,
     ph_values               numrange                         DEFAULT NULL,
     injection_limits        water_rights.injection_limit[]   DEFAULT NULL,
-    location                geometry                         DEFAULT NULL
+    location                geometry('point', 25832)         DEFAULT NULL
 );
 
 -- name: 11
