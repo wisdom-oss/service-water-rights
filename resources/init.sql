@@ -73,9 +73,9 @@ $$
         -- the attributes "district" and "fields" are mutually exclusive to "fallback"
         CREATE TYPE water_rights.land_record AS
         (
-            fallback text,
             district text,
-            field    int8
+            field    int8,
+            fallback text
         );
         COMMENT ON TYPE water_rights.land_record IS 'the attributes "district" and "fields" are mutually exclusive to "fallback"';
     EXCEPTION
