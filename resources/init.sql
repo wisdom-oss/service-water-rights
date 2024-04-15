@@ -120,8 +120,12 @@ $$;
 -- name: 09
 CREATE TABLE IF NOT EXISTS water_rights.rights
 (
-    -- the id acts directly as the "no" value from the imported water rights
-    id                    int8 NOT NULL PRIMARY KEY,
+    -- id is the internally used id that is automatically created for each water
+    -- right
+    id                    bigserial PRIMARY KEY,
+    -- water_right_number contains the officially issued water right number
+    -- by the governing body
+    water_right_number    bigint NOT NULL,
     external_identifier   text                            DEFAULT NULL,
     file_reference        text                            DEFAULT NULL,
     legal_departments     water_rights.legal_department[] DEFAULT NULL,
@@ -144,9 +148,11 @@ CREATE TABLE IF NOT EXISTS water_rights.rights
 CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 (
     id                      bigserial PRIMARY KEY,
-    no                      int8                             DEFAULT NULL,
+    no                      bigint                             DEFAULT NULL,
     serial                  text                             DEFAULT NULL,
-    water_right             int8 REFERENCES water_rights.rights (id) MATCH FULL NOT NULL,
+    -- water_right points to the internally used id of the water right since the
+    -- locations may vary between each water right
+    water_right             bigint REFERENCES water_rights.rights (id) MATCH FULL NOT NULL,
     legal_department        water_rights.legal_department                       NOT NULL,
     active                  bool                             DEFAULT NULL,
     real                    bool                             DEFAULT NULL,
@@ -180,4 +186,9 @@ CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 );
 
 -- name: 11
-COMMENT ON COLUMN water_rights.rights.id IS 'the id acts directly as the "no" value from the imported water rights';
+CREATE TABLE IF NOT EXISTS water_rights.current_rights
+(
+    water_right_number int8 NOT NULL,
+    internal_id        int8,
+    deleted            timestamptz DEFAULT NULL
+)
