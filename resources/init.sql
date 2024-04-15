@@ -191,4 +191,4 @@ CREATE TABLE IF NOT EXISTS water_rights.current_rights
     water_right_number int8 NOT NULL,
     internal_id        int8,
     deleted            timestamptz DEFAULT NULL
-)
+);
