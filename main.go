@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
-	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
+	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v4"
 	"golang.org/x/net/http2"
 
 	"github.com/wisdom-oss/service-water-rights/globals"
@@ -40,9 +40,9 @@ func main() {
 	})
 	router.Use(httplog.RequestLogger(mainLogger))
 	// now configure the middleware used to handle errors that are predefined
-	router.Use(wisdomMiddleware.ErrorHandler(globals.ServiceName, globals.Errors))
+	router.Use(wisdomMiddleware.ErrorHandler)
 	// now add the authentication middleware
-	router.Use(wisdomMiddleware.Authorization(globals.AuthorizationConfiguration, globals.ServiceName))
+	router.Use(wisdomMiddleware.Authorization(globals.ServiceName))
 
 	// now add the routes and their path specifications to the router
 	router.Get("/", routes.UsageLocations)
