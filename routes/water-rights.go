@@ -1,87 +1,89 @@
-//go:build ignore
-
 package routes
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+	"time"
 
-	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/goccy/go-json"
+	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
 
-	"microservice/globals"
-	"microservice/types"
+	"github.com/wisdom-oss/service-water-rights/globals"
+	"github.com/wisdom-oss/service-water-rights/types"
 )
 
 // WaterRights returns all water rights stored in the database with all usage
 // locations.
 func WaterRights(w http.ResponseWriter, r *http.Request) {
-	// get the error handler and the status channel
-	errorHandler := r.Context().Value(wisdomMiddleware.ERROR_CHANNEL_NAME).(chan<- interface{})
-	statusChannel := r.Context().Value(wisdomMiddleware.STATUS_CHANNEL_NAME).(<-chan bool)
+	errorHandler := r.Context().Value(errorMiddleware.ChannelName).(chan<- interface{})
 
-	// now query the database for all water rights available in the database
-	rows, err := globals.SqlQueries.Query(globals.Db, "water-rights")
+	query, err := globals.SqlQueries.Raw("water-rights")
 	if err != nil {
-		errorHandler <- fmt.Errorf("unable to get all water rights: %w", err)
-		<-statusChannel
+		errorHandler <- fmt.Errorf("failed to retrieve query for water rights: %w", err)
 		return
 	}
+
 	var waterRights []types.WaterRight
-	err = scan.Rows(&waterRights, rows)
+	err = pgxscan.Select(r.Context(), globals.Db, &waterRights, query)
 	if err != nil {
-		errorHandler <- fmt.Errorf("unable to parse database rows: %w", err)
-		<-statusChannel
+		errorHandler <- fmt.Errorf("unable to query water rights: %w", err)
 		return
 	}
 
-	// now build the filter for the usage location request for the water rights
-	filterQuery := `WHERE water_right = $1::int;`
-	baseQuery, err := globals.SqlQueries.Raw("extended-usage-locations")
+	query, err = globals.SqlQueries.Raw("get-water-right-usage-locations")
 	if err != nil {
-		errorHandler <- fmt.Errorf("unable to load query: %w", err)
-		<-statusChannel
-		return
-	}
-	queryString := strings.ReplaceAll(baseQuery, `;`, "")
-	queryString += fmt.Sprintf(" %s", filterQuery)
-
-	// now prepare the query
-	query, err := globals.Db.Prepare(queryString)
-	if err != nil {
-		errorHandler <- fmt.Errorf("unable to prepare sql query: %w", err)
-		<-statusChannel
+		errorHandler <- fmt.Errorf("unable to query water right locations: %w", err)
 		return
 	}
 
-	for idx, waterRight := range waterRights {
-		// execute the prepared query
-		rows, err := query.Query(waterRight.NlwknId)
-		if err != nil {
-			errorHandler <- fmt.Errorf("unable to query usage locations: %w", err)
-			<-statusChannel
-			return
+	var responseContents []struct {
+		types.WaterRight
+		Locations []types.UsageLocation `json:"locations"`
+	}
+
+	var errors []error
+	var successes []bool
+
+	for _, waterRight := range waterRights {
+		go func(wr types.WaterRight, query string) {
+			var usageLocations []types.UsageLocation
+			err = pgxscan.Select(r.Context(), globals.Db, &usageLocations, query)
+			if err != nil {
+				errors = append(errors, err)
+				return
+			}
+			responseContents = append(responseContents, struct {
+				types.WaterRight
+				Locations []types.UsageLocation `json:"locations"`
+			}{
+				WaterRight: waterRight,
+				Locations:  usageLocations,
+			})
+			successes = append(successes, true)
+
+		}(waterRight, query)
+	}
+
+	for {
+		if len(errors)+len(successes) == len(waterRights) {
+			break
+		} else {
+			time.Sleep(150 * time.Millisecond)
 		}
-		// now parse the usage locations
-		var usageLocations []types.UsageLocation
-		err = scan.RowsStrict(&usageLocations, rows)
-		if err != nil {
-			errorHandler <- fmt.Errorf("unable to parse database rows: %w", err)
-			<-statusChannel
-			return
-		}
-
-		// now set the parsed usage locations on the water right
-		waterRight.UsageLocations = usageLocations
-		waterRights[idx] = waterRight
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(waterRights)
-	if err != nil {
-		errorHandler <- fmt.Errorf("unable to send response: %w", err)
-		<-statusChannel
+	if len(errors) != 0 {
+		for _, err := range errors {
+			errorHandler <- fmt.Errorf("unable to query water right locations: %w", err)
+		}
 		return
 	}
+
+	err = json.NewEncoder(w).Encode(responseContents)
+	if err != nil {
+		errorHandler <- fmt.Errorf("unable to encode response: %w", err)
+		return
+	}
+
 }

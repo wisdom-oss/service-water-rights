@@ -10,7 +10,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
-	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
+	errorHandler "github.com/wisdom-oss/microservice-middlewares/v5/error"
+	securityMiddlewares "github.com/wisdom-oss/microservice-middlewares/v5/security"
 	"golang.org/x/net/http2"
 
 	"github.com/wisdom-oss/service-water-rights/globals"
@@ -40,12 +41,14 @@ func main() {
 	})
 	router.Use(httplog.RequestLogger(mainLogger))
 	// now configure the middleware used to handle errors that are predefined
-	router.Use(wisdomMiddleware.ErrorHandler(globals.ServiceName, globals.Errors))
+	router.Use(errorHandler.Handler)
 	// now add the authentication middleware
-	router.Use(wisdomMiddleware.Authorization(globals.AuthorizationConfiguration, globals.ServiceName))
+	router.Use(securityMiddlewares.ValidateServiceJWT)
 
 	// now add the routes and their path specifications to the router
-	router.Get("/", routes.UsageLocations)
+	router.
+		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
+		Get("/", routes.UsageLocations)
 	//router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 
 	// now configure the http2c and the http server
