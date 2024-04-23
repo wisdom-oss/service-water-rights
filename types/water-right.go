@@ -8,14 +8,16 @@ import "github.com/jackc/pgx/v5/pgtype"
 // It supplies in-depth specifics such as the granting and registering
 // authorities, the first granted and last changed dates of the right, and a
 // reference to the water right application.
-// It also includes the subject of the right, the address of the rights holder,
+// It also includes the subject of the right, the address of the right holder,
 // any legal departments associated with the right, and other annotations.
 type WaterRight struct {
-	// ID represents the ID issued for this water right by the NLWKN which also
-	// acts as the primary key in the database
+	// ID represents the ID issued for this water right by the database
 	ID pgtype.Int8 `json:"id" db:"id"`
 
-	// Holder contains the name of the holder of this water right
+	// WaterRightNumber represents the ID of the water right issued by the NLWKN
+	WaterRightNumber pgtype.Int8 `json:"water_right_number" db:"water_right_number"`
+
+	// Holder contains the holder's name for this water right
 	Holder *pgtype.Text `json:"holder" db:"holder"`
 
 	// ValidFrom contains the date from which on the water right is valid

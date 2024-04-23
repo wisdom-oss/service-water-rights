@@ -1,7 +1,11 @@
 package types
 
 import (
+	"encoding/json"
+
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/twpayne/go-geom/encoding/ewkb"
+	"github.com/twpayne/go-geom/encoding/geojson"
 )
 
 type UsageLocation struct {
@@ -118,5 +122,23 @@ type UsageLocation struct {
 
 	// Location contains the GeoJSON representation of the usage locations
 	// location
-	Location interface{} `json:"location,omitempty" db:"location"`
+	Location ewkb.Point `json:"location,omitempty" db:"location"`
+}
+
+// MarshalJSON converts the UsageLocation struct to its JSON representation.
+// The method encodes the location point using the geojson.Encode() function to
+// obtain a geojson.Geometry object.
+// It then marshals the struct that embeds the UsageLocation instance and the
+// Location field, which represents the encoded location point.
+// The method returns the JSON byte array representation of the struct and any
+// encoding errors.
+func (ul UsageLocation) MarshalJSON() ([]byte, error) {
+	loc, _ := geojson.Encode(ul.Location.Point)
+	return json.Marshal(struct {
+		UsageLocation
+		Location geojson.Geometry `json:"location"`
+	}{
+		UsageLocation: ul,
+		Location:      *loc,
+	})
 }
