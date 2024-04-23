@@ -15,7 +15,7 @@ require (
 	github.com/twpayne/go-geom v1.5.4
 	github.com/wisdom-oss/commonTypes v1.0.0
 	github.com/wisdom-oss/commonTypes/v2 v2.0.1
-	github.com/wisdom-oss/microservice-middlewares/v4 v4.0.1
+	github.com/wisdom-oss/microservice-middlewares/v5 v5.0.1
 	golang.org/x/net v0.24.0
 
 )

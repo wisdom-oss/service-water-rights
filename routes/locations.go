@@ -9,7 +9,7 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
-	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
+	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
 
 	"github.com/wisdom-oss/service-water-rights/types"
 
@@ -25,8 +25,7 @@ const (
 // UsageLocations returns a possibly filtered list of usage locations
 func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	// get the error handler and the status channel
-	errorHandler := r.Context().Value(wisdomMiddleware.ERROR_CHANNEL_NAME).(chan<- interface{})
-	statusChannel := r.Context().Value(wisdomMiddleware.STATUS_CHANNEL_NAME).(<-chan bool)
+	errorHandler := r.Context().Value(errorMiddleware.ChannelName).(chan<- interface{})
 
 	// now check which filters were enabled
 	var enabledFilters uint8
@@ -45,7 +44,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	queryString, err := globals.SqlQueries.Raw("usage-locations")
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to load base query: %w", err)
-		<-statusChannel
 		return
 	}
 
@@ -53,7 +51,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-locations")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -73,7 +70,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-state")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -93,7 +89,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-reality")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -124,7 +119,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		errorHandler <- fmt.Errorf("error while querying the database: %w", err)
-		<-statusChannel
 		return
 	}
 
@@ -132,7 +126,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	err = pgxscan.ScanAll(&locations, rows)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to parse query result: %w", err)
-		<-statusChannel
 		return
 	}
 
@@ -145,7 +138,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(locations)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to return response: %w", err)
-		<-statusChannel
 		return
 	}
 }
