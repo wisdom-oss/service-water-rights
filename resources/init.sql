@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 -- name: 11
 CREATE TABLE IF NOT EXISTS water_rights.current_rights
 (
-    water_right_number int8 NOT NULL,
+    water_right_number int8 PRIMARY KEY,
     internal_id        int8,
     deleted            timestamptz DEFAULT NULL
 );
