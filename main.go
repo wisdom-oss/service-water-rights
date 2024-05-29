@@ -42,7 +42,9 @@ func main() {
 	router.
 		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
 		Get("/", routes.UsageLocations)
-	//router.Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
+	router.
+		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
+		Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 
 	// now configure the http2c and the http server
 	http2Server := &http2.Server{}
