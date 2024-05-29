@@ -148,12 +148,12 @@ CREATE TABLE IF NOT EXISTS water_rights.rights
 CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 (
     id                      bigserial PRIMARY KEY,
-    no                      bigint                             DEFAULT NULL,
+    no                      bigint                           DEFAULT NULL,
     serial                  text                             DEFAULT NULL,
     -- water_right points to the internally used id of the water right since the
     -- locations may vary between each water right
     water_right             bigint REFERENCES water_rights.rights (id) MATCH FULL NOT NULL,
-    legal_department        water_rights.legal_department                       NOT NULL,
+    legal_department        water_rights.legal_department                         NOT NULL,
     active                  bool                             DEFAULT NULL,
     real                    bool                             DEFAULT NULL,
     name                    text                             DEFAULT NULL,
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 -- name: 11
 CREATE TABLE IF NOT EXISTS water_rights.current_rights
 (
-    water_right_number int8 PRIMARY KEY,
+    water_right_number int8 NOT NULL PRIMARY KEY,
     internal_id        int8,
     deleted            timestamptz DEFAULT NULL
 );
