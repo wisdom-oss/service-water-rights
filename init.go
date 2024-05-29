@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,17 +16,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 
+	"github.com/wisdom-oss/service-water-rights/config"
 	"github.com/wisdom-oss/service-water-rights/globals"
 )
-
-// DefaultAuth contains the default authentication configuration if no file
-// is present. it only allows named users access to this service who use the
-// same group as the service name
-var DefaultAuth = wisdomType.AuthorizationConfiguration{
-	Enabled:                   true,
-	RequireUserIdentification: true,
-	RequiredUserGroup:         globals.ServiceName,
-}
 
 // customTypes contains the PostgreSQL names of the custom types that are used
 // by the microservice. these custom types are registered during the execution
@@ -39,7 +29,6 @@ var customTypes = []string{
 	"water_rights.rate",
 	"water_rights.dam_target",
 	"water_rights.land_record",
-	"water_rights.value_range",
 	"water_rights.legal_department",
 	"water_rights.injection_limit",
 }
@@ -57,8 +46,6 @@ func init() {
 
 	configureLogger()
 	loadServiceConfiguration()
-	processErrorFile()
-	setupAuthorization()
 	connectDatabase()
 	loadPreparedQueries()
 
@@ -72,8 +59,6 @@ func init() {
 // value is supplied or no level is supplied, the service defaults to the
 // `INFO` level
 func configureLogger() {
-	// set the time format to unix timestamps to allow easier machine handling
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// allow the logger to create an error stack for the logs
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
@@ -110,7 +95,7 @@ func loadServiceConfiguration() {
 	location, locationChanged := os.LookupEnv("ENV_CONFIG_LOCATION")
 	if !locationChanged {
 		// since the location has not changed, set the default value
-		location = "./environment.json"
+		location = config.EnvironmentFilePath
 		initLogger.Debug().Msg("location for environment config not changed")
 	}
 	initLogger.Debug().Str("path", location).Msg("loading environment requirements file")
@@ -127,76 +112,6 @@ func loadServiceConfiguration() {
 	initLogger.Info().Msg("loaded service configuration from environment")
 }
 
-// processErrorFile handles the loading and processing of the predefined errors
-// in the `errors.json` file located in `resources`.
-func processErrorFile() {
-	initLogger.Info().Msg("processing predefined errors")
-	filePath, isSet := globals.Environment["ERROR_FILE_LOCATION"]
-	if !isSet {
-		initLogger.Fatal().Msg("no error file location set in environment")
-	}
-	if strings.TrimSpace(filePath) == "" {
-		initLogger.Fatal().Msg("empty path supplied for error file location")
-	}
-	errorFile, err := os.Open(filePath)
-	if err != nil {
-		initLogger.Fatal().Err(err).Msg("unable to open file containing predefined errors")
-	}
-
-	var errors []wisdomType.WISdoMError
-	err = json.NewDecoder(errorFile).Decode(&errors)
-	if err != nil {
-		initLogger.Fatal().Err(err).Msg("unable to unmarshal error file into go structs")
-	}
-
-	// now iterate over the errors to generate the global error map
-	for _, parsedError := range errors {
-		parsedError.InferHttpStatusText()
-		globals.Errors[parsedError.ErrorCode] = parsedError
-	}
-	initLogger.Info().Msg("loaded predefined errors")
-}
-
-// setupAuthorization configures the authorization requirements for the
-// microservice
-//
-// It first checks if the authorization configuration file location is set in
-// the environment variables.
-// If it is not set, it logs a warning message and uses the default
-// authorization configuration.
-// If the path is set but empty, it logs a warning message and uses the default
-// configuration.
-// If the path is not empty, it tries to populate the authorization
-// configuration from the file.
-// If it encounters an error while populating the configuration, it logs a
-// warning message and uses the default configuration.
-// Finally, it logs a message indicating that the authorization requirements
-// have been configured.
-func setupAuthorization() {
-	initLogger.Info().Msg("configuring authorization requirements")
-	filePath, isSet := globals.Environment["AUTH_CONFIG_FILE_LOCATION"]
-	if !isSet {
-		initLogger.Warn().Interface("defaultConfig", DefaultAuth).Msg("no authorization configuration file found. using default")
-		globals.AuthorizationConfiguration = DefaultAuth
-		return
-	}
-
-	if strings.TrimSpace(filePath) == "" {
-		initLogger.Warn().Interface("defaultConfig", DefaultAuth).Msg("empty path set for authorization configuration file. using default")
-		globals.AuthorizationConfiguration = DefaultAuth
-		return
-	}
-
-	err := globals.AuthorizationConfiguration.PopulateFromFilePath(filePath)
-	if err != nil {
-		initLogger.Warn().Err(err).Msg("unable to populate configuration from detected file. using default")
-		globals.AuthorizationConfiguration = DefaultAuth
-		return
-	}
-
-	initLogger.Info().Msg("configured authorization requirements")
-}
-
 // connectDatabase uses the previously read environment variables to connect the
 // microservice to the PostgreSQL database used as the backend for all WISdoM
 // services
@@ -208,12 +123,12 @@ func connectDatabase() {
 		globals.Environment["PG_HOST"], globals.Environment["PG_PORT"])
 
 	var err error
-	config, err := pgxpool.ParseConfig(address)
+	pgxConfig, err := pgxpool.ParseConfig(address)
 	if err != nil {
 		initLogger.Fatal().Err(err).Msg("unable to create base configuration for connection pool")
 	}
-	config.AfterConnect = registerCustomTypes
-	globals.Db, err = pgxpool.NewWithConfig(context.Background(), config)
+	pgxConfig.AfterConnect = registerCustomTypes
+	globals.Db, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
 		initLogger.Fatal().Err(err).Msg("unable to create database connection pool")
 	}
@@ -232,8 +147,14 @@ func connectDatabase() {
 // This function is typically called during the startup of the microservice.
 func loadPreparedQueries() {
 	initLogger.Info().Msg("loading prepared sql queries")
+	location, locationChanged := os.LookupEnv("QUERY_FILE_LOCATION")
+	if !locationChanged {
+		// since the location has not changed, set the default value
+		location = config.QueryFilePath
+		initLogger.Debug().Msg("location for environment config not changed")
+	}
 	var err error
-	globals.SqlQueries, err = dotsql.LoadFromFile(globals.Environment["QUERY_FILE_LOCATION"])
+	globals.SqlQueries, err = dotsql.LoadFromFile(location)
 	if err != nil {
 		initLogger.Fatal().Err(err).Msg("failed to load prepared queries")
 	}

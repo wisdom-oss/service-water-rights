@@ -31,19 +31,12 @@ func main() {
 	router := chi.NewRouter()
 	// add a middleware that uses the x-real-ip or x-forwarded-for headers to
 	// show the real ip of the person sending a request
-	router.Use(middleware.RealIP)
-	// add a middleware for allowing heartbeats to be sent to the service
-	router.Use(middleware.Heartbeat("/ping"))
+	router.Use(config.Middlewares...)
 	// now configure the logging for the service and add it to the router
 	httplog.Configure(httplog.Options{
 		JSON:    true,
 		Concise: true,
 	})
-	router.Use(httplog.RequestLogger(mainLogger))
-	// now configure the middleware used to handle errors that are predefined
-	router.Use(errorHandler.Handler)
-	// now add the authentication middleware
-	router.Use(securityMiddlewares.ValidateServiceJWT)
 
 	// now add the routes and their path specifications to the router
 	router.
@@ -54,7 +47,7 @@ func main() {
 	// now configure the http2c and the http server
 	http2Server := &http2.Server{}
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%s", globals.Environment["LISTEN_PORT"]),
+		Addr:    fmt.Sprintf("%s:%s", config.ListenAddress, globals.Environment["LISTEN_PORT"]),
 		Handler: h2c.NewHandler(router, http2Server),
 	}
 
