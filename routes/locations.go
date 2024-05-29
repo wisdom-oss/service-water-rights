@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/georgysavva/scany/v2/dbscan"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5"
 	"github.com/lib/pq"
 	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
 
@@ -39,9 +39,9 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		enabledFilters = enabledFilters | realityFilter
 	}
 
-	// now build an array of the arguments and build the query
 	var arguments []interface{}
-	queryString, err := globals.SqlQueries.Raw("usage-locations")
+	// now build an array of the arguments and build the query
+	queryString, err := globals.SqlQueries.Raw("get-locations")
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to load base query: %w", err)
 		return
@@ -109,23 +109,20 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	queryString = strings.ReplaceAll(queryString, ";", "")
 	queryString += ";"
 
-	var rows pgx.Rows
-	// now query the database with the correct number of arguments
-	if len(arguments) == 0 {
-		rows, err = globals.Db.Query(r.Context(), queryString)
-	} else {
-		rows, err = globals.Db.Query(r.Context(), queryString, arguments...)
-	}
-
+	api, err := pgxscan.NewDBScanAPI(dbscan.WithAllowUnknownColumns(true))
 	if err != nil {
-		errorHandler <- fmt.Errorf("error while querying the database: %w", err)
+		errorHandler <- fmt.Errorf("unable to prepare query parser: %w", err)
 		return
+	}
+	scanner, err := pgxscan.NewAPI(api)
+	if err != nil {
+		errorHandler <- fmt.Errorf("unable to create query parser: %w", err)
 	}
 
 	var locations []types.UsageLocation
-	err = pgxscan.ScanAll(&locations, rows)
+	err = scanner.Select(r.Context(), globals.Db, &locations, queryString, arguments...)
 	if err != nil {
-		errorHandler <- fmt.Errorf("unable to parse query result: %w", err)
+		errorHandler <- fmt.Errorf("unable to retrieve usage locations: %w", err)
 		return
 	}
 

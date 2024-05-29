@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"strings"
 
+	"github.com/georgysavva/scany/v2/dbscan"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/go-chi/chi/v5"
 	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
@@ -74,8 +75,18 @@ func SingleWaterRight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	api, err := pgxscan.NewDBScanAPI(dbscan.WithAllowUnknownColumns(true))
+	if err != nil {
+		errorHandler <- fmt.Errorf("unable to prepare query parser: %w", err)
+		return
+	}
+	scanner, err := pgxscan.NewAPI(api)
+	if err != nil {
+		errorHandler <- fmt.Errorf("unable to create query parser: %w", err)
+	}
+
 	var usageLocations []types.UsageLocation
-	err = pgxscan.Select(r.Context(), globals.Db, &usageLocations, query, internalWaterRightID)
+	err = scanner.Select(r.Context(), globals.Db, &usageLocations, query, internalWaterRightID)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to retrieve water right usage locations: %w", err)
 		return
@@ -87,7 +98,7 @@ func SingleWaterRight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encodedUsageLocations, err := json.Marshal(waterRight)
+	encodedUsageLocations, err := json.Marshal(usageLocations)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to encode water right: %w", err)
 		return
@@ -114,7 +125,7 @@ func SingleWaterRight(w http.ResponseWriter, r *http.Request) {
 	usageLocationsPartHeader := make(textproto.MIMEHeader)
 	usageLocationsPartHeader.Set("Content-Disposition", `form-data; name="usage-locations"`)
 	usageLocationsPartHeader.Set("Content-Type", "application/json")
-	usageLocationsPart, err := multipartWriter.CreatePart(waterRightPartHeader)
+	usageLocationsPart, err := multipartWriter.CreatePart(usageLocationsPartHeader)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to create multipart field for usage locations: %w", err)
 
