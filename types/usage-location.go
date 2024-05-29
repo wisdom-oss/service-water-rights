@@ -1,11 +1,7 @@
 package types
 
 import (
-	"encoding/json"
-
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/twpayne/go-geom/encoding/ewkb"
-	"github.com/twpayne/go-geom/encoding/geojson"
 )
 
 type UsageLocation struct {
@@ -15,12 +11,15 @@ type UsageLocation struct {
 	// LocationNumber is the usage locations id issued by the cadenza database
 	LocationNumber *pgtype.Int8 `json:"no" db:"no"`
 
-	// SerialID enumerates the usage location inside a water right
-	SerialID *pgtype.Text `json:"serial,omitempty" db:"no"`
+	// SerialID enumerates the usage location inside water right
+	SerialID *pgtype.Text `json:"serial,omitempty" db:"serial"`
 
 	// WaterRightID shows which water right is associated with this usage
 	// location
 	WaterRightID pgtype.Int8 `json:"waterRight,omitempty" db:"water_right"`
+
+	// LegalDepartment shows into which legal department this usage location falls
+	LegalDepartment pgtype.Text `json:"legalDepartment" db:"legal_department"`
 
 	// Active shows if the usage location is currently used
 	Active *pgtype.Bool `json:"active,omitempty" db:"active"`
@@ -32,7 +31,7 @@ type UsageLocation struct {
 	Name *pgtype.Text `json:"name,omitempty" db:"name"`
 
 	// LegalPurpose contains the legal purpose for the usage location
-	LegalPurpose *[2]string `json:"legalPurpose,omitempty" db:"legal_purpose"`
+	LegalPurpose *[]string `json:"legalPurpose,omitempty" db:"legal_purpose"`
 
 	// MapExcerpt contains the identification of the area the location is in on
 	// a topological map using a 1:25000 scale
@@ -118,27 +117,9 @@ type UsageLocation struct {
 	PHValues *pgtype.Range[pgtype.Numeric] `json:"phValues,omitempty" db:"ph_values"`
 
 	// InjectionLimits contains information about injection limitations
-	InjectionLimits []InjectionLimit `json:"injectionLimits,omitempty" db:"injection_limit"`
+	InjectionLimits []InjectionLimit `json:"injectionLimits,omitempty" db:"injection_limits"`
 
 	// Location contains the GeoJSON representation of the usage locations
 	// location
-	Location ewkb.Point `json:"location,omitempty" db:"location"`
-}
-
-// MarshalJSON converts the UsageLocation struct to its JSON representation.
-// The method encodes the location point using the geojson.Encode() function to
-// obtain a geojson.Geometry object.
-// It then marshals the struct that embeds the UsageLocation instance and the
-// Location field, which represents the encoded location point.
-// The method returns the JSON byte array representation of the struct and any
-// encoding errors.
-func (ul UsageLocation) MarshalJSON() ([]byte, error) {
-	loc, _ := geojson.Encode(ul.Location.Point)
-	return json.Marshal(struct {
-		UsageLocation
-		Location geojson.Geometry `json:"location"`
-	}{
-		UsageLocation: ul,
-		Location:      *loc,
-	})
+	Location *Location `json:"location,omitempty" db:"location_ewkb"`
 }
