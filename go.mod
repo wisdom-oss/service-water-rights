@@ -6,17 +6,16 @@ require (
 	github.com/georgysavva/scany/v2 v2.1.3
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-chi/httplog v0.3.2
-	github.com/goccy/go-json v0.10.2
-	github.com/jackc/pgx/v5 v5.5.5
+	github.com/goccy/go-json v0.10.3
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
 	github.com/qustavo/dotsql v1.2.0
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/twpayne/go-geom v1.5.4
 	github.com/wisdom-oss/commonTypes v1.0.0
 	github.com/wisdom-oss/commonTypes/v2 v2.0.1
-	github.com/wisdom-oss/microservice-middlewares/v5 v5.0.1
-	golang.org/x/net v0.24.0
+	github.com/wisdom-oss/microservice-middlewares/v5 v5.1.2
+	golang.org/x/net v0.25.0
 
 )
 
@@ -35,8 +34,8 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 )
