@@ -1,19 +1,19 @@
 package routes
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/blockloop/scan/v2"
+	"github.com/georgysavva/scany/v2/dbscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
-	wisdomMiddleware "github.com/wisdom-oss/microservice-middlewares/v3"
+	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
 
-	"microservice/globals"
-	"microservice/types"
+	"github.com/wisdom-oss/service-water-rights/types"
+
+	"github.com/wisdom-oss/service-water-rights/globals"
 )
 
 const (
@@ -25,8 +25,7 @@ const (
 // UsageLocations returns a possibly filtered list of usage locations
 func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	// get the error handler and the status channel
-	errorHandler := r.Context().Value(wisdomMiddleware.ERROR_CHANNEL_NAME).(chan<- interface{})
-	statusChannel := r.Context().Value(wisdomMiddleware.STATUS_CHANNEL_NAME).(<-chan bool)
+	errorHandler := r.Context().Value(errorMiddleware.ChannelName).(chan<- interface{})
 
 	// now check which filters were enabled
 	var enabledFilters uint8
@@ -40,12 +39,11 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		enabledFilters = enabledFilters | realityFilter
 	}
 
-	// now build an array of the arguments and build the query
 	var arguments []interface{}
-	queryString, err := globals.SqlQueries.Raw("usage-locations")
+	// now build an array of the arguments and build the query
+	queryString, err := globals.SqlQueries.Raw("get-locations")
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to load base query: %w", err)
-		<-statusChannel
 		return
 	}
 
@@ -53,7 +51,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-locations")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -73,7 +70,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-state")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -93,7 +89,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		filter, err := globals.SqlQueries.Raw("filter-reality")
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to load filter query: %w", err)
-			<-statusChannel
 			return
 		}
 
@@ -114,37 +109,25 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	queryString = strings.ReplaceAll(queryString, ";", "")
 	queryString += ";"
 
-	// now prepare the query
-	query, err := globals.Db.Prepare(queryString)
+	api, err := pgxscan.NewDBScanAPI(dbscan.WithAllowUnknownColumns(true))
 	if err != nil {
-		errorHandler <- fmt.Errorf("unable to preparse query: %w", err)
-		<-statusChannel
+		errorHandler <- fmt.Errorf("unable to prepare query parser: %w", err)
 		return
 	}
-
-	var rows *sql.Rows
-	// now query the database with the correct number of arguments
-	if len(arguments) == 0 {
-		rows, err = query.Query()
-	} else {
-		rows, err = query.Query(arguments...)
-	}
-
+	scanner, err := pgxscan.NewAPI(api)
 	if err != nil {
-		errorHandler <- fmt.Errorf("error while querying the database: %w", err)
-		<-statusChannel
-		return
+		errorHandler <- fmt.Errorf("unable to create query parser: %w", err)
 	}
 
 	var locations []types.UsageLocation
-	err = scan.Rows(&locations, rows)
+	err = scanner.Select(r.Context(), globals.Db, &locations, queryString, arguments...)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			w.WriteHeader(204)
-			return
-		}
-		errorHandler <- fmt.Errorf("unable to parse query result: %w", err)
-		<-statusChannel
+		errorHandler <- fmt.Errorf("unable to retrieve usage locations: %w", err)
+		return
+	}
+
+	if len(locations) == 0 {
+		w.WriteHeader(204)
 		return
 	}
 
@@ -152,7 +135,6 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(locations)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to return response: %w", err)
-		<-statusChannel
 		return
 	}
 }

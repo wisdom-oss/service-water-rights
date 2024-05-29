@@ -1,62 +1,86 @@
 package types
 
-import "time"
+import "github.com/jackc/pgx/v5/pgtype"
 
-// WaterRight collects all UsageLocations of the single water right and contains
-// legal information about the wate right and the last modification date, if
-// available
+// WaterRight represents a water right entry, incorporating various details
+// about the right including the holder of the right, the time window of its
+// validity, the status and the legal title of the right.
+// It supplies in-depth specifics such as the granting and registering
+// authorities, the first granted and last changed dates of the right, and a
+// reference to the water right application.
+// It also includes the subject of the right, the address of the right holder,
+// any legal departments associated with the right, and other annotations.
 type WaterRight struct {
-	// ID contains the internally used id to reference this water right
-	ID int `json:"id" db:"id"`
+	// ID represents the ID issued for this water right by the database
+	ID pgtype.Int8 `json:"id" db:"id"`
 
-	// NlwknId contains the id used by the NLWKN to reference the water right
-	NlwknId int `json:"nlwknID" db:"no"`
+	// WaterRightNumber represents the ID of the water right issued by the NLWKN
+	WaterRightNumber pgtype.Int8 `json:"water_right_number" db:"water_right_number"`
 
-	// ExternalID contains the id that is used by the NLWKN to reference the
-	// water right in external applications
-	ExternalID *string `json:"externalID,omitempty" db:"ext_id"`
+	// Holder contains the holder's name for this water right
+	Holder *pgtype.Text `json:"holder" db:"holder"`
 
-	// FileReference contains a reference to the file containing the water
+	// ValidFrom contains the date from which on the water right is valid
+	ValidFrom *pgtype.Date `json:"validFrom" db:"valid_from"`
+
+	// ValidUntil contains the date until the water right is valid and may be
+	// used
+	ValidUntil *pgtype.Date `json:"validUntil" db:"valid_until"`
+
+	// Status contains a textual description of the water rights state
+	Status *pgtype.Text `json:"status" db:"status"`
+
+	// LegalTitle contains information about the title issued for the water
 	// right
-	FileReference *string `json:"fileReference,omitempty" db:"file_ref"`
+	LegalTitle *pgtype.Text `json:"legalTitle" db:"legal_title"`
 
-	// State contains the current state of the water right
-	State *string `json:"state,omitempty" db:"state"`
-
-	// Subject contains a subject listed for the water right
-	Subject *string `json:"subject,omitempty" db:"subject"`
-
-	// Address contains the user's address
-	Address *string `json:"address,omitempty" db:"address"`
-
-	// Annotation contains an annotation related to the water right which may
-	// further limit the rights granted
-	Annotation *string `json:"annotation,omitempty" db:"address"`
-
-	// Bailee contains the information about the keeper of the water right
-	Bailee *string `json:"bailee,omitempty" db:"bailee"`
-
-	// LastChange contains the information about the last time the water right
-	// has been changed
-	LastChange *time.Time `json:"dateOfChange,omitempty" db:"date_of_change"`
-
-	// Validity contains a DateRange showing in which time range the water right
-	// is valid
-	Validity *DateRange `json:"valid,omitempty" db:"valid"`
-
-	// GrantingAuthority contains the name of the authority that granted the
-	// water right
-	GrantingAuthority *string `json:"grantingAuthority,omitempty" db:"granting_authority"`
+	// WaterAuthority contains the name of the water authority responsible for
+	// the water right
+	WaterAuthority *pgtype.Text `json:"waterAuthority" db:"water_authority"`
 
 	// RegisteringAuthority contains the name of the authority that the water
 	// right has been registered with
-	RegisteringAuthority *string `json:"registeringAuthority,omitempty" db:"registering_authority"`
+	RegisteringAuthority *pgtype.Text `json:"registeringAuthority" db:"registering_authority"`
 
-	// WaterAuthority contains the name of the water authority related to the
+	// GrantingAuthority contains the name of the authority that granted the
 	// water right
-	WaterAuthority *string `json:"waterAuthority,omitempty" db:"water_authority"`
+	GrantingAuthority *pgtype.Text `json:"grantingAuthority" db:"granting_authority"`
 
-	// UsageLocations contains all usage locations that are listed for this
-	// water right
-	UsageLocations []UsageLocation `json:"locations" db:"-"`
+	// InitiallyGranted contains the date at which the water right has been granted
+	// for the first time
+	InitiallyGranted *pgtype.Date `json:"initiallyGranted" db:"initially_granted"`
+
+	// LastChange contains the date at which the water right has been changed
+	// for the last time
+	LastChange *pgtype.Date `json:"lastChange" db:"last_change"`
+
+	// FileReference contains the reference to the water right application
+	FileReference *pgtype.Text `json:"fileReference" db:"file_reference"`
+
+	// ExternalIdentifier contains an external identifier assigned by the
+	// RegisteringAuthority
+	ExternalIdentifier *pgtype.Text `json:"externalIdentifier" db:"external_identifier"`
+
+	// Subject contains the subject of the water right
+	Subject *pgtype.Text `json:"subject" db:"subject"`
+
+	// Address contains the address of the RightsHolder
+	Address *pgtype.Text `json:"address" db:"address"`
+
+	// LegalDepartments contains the identifiers for the legal departments the
+	// water right has been assigned to.
+	//
+	// The possible values are:
+	//   * A: Withdrawal of water or solid substances from surface waters
+	//   * B: Introduction and discharge of substances into surface and coastal waters
+	//   * C: Damming and lowering of surface waters
+	//   * D: Other impact on surface waters
+	//   * E: Withdrawal, pumping and discharge of groundwater
+	//   * F: Other uses and impacts on groundwater
+	//   * K: Compulsory rights
+	//   * L: Fishing Rights
+	LegalDepartments []string `json:"legalDepartments" db:"legal_departments"`
+
+	// Annotation contains other annotations for the water right
+	Annotation *pgtype.Text `json:"annotation" db:"annotation"`
 }

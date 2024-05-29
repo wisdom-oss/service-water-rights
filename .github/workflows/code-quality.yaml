@@ -22,9 +22,17 @@ jobs:
       matrix:
         language:
           - go
+        build-tag:
+          - docker
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Initialize latest stable Go Version
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -35,7 +43,14 @@ jobs:
       - name: Build Service Executable
         uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis — Docker
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{matrix.language}}:docker"
+        env:
+          GOFLAGS: "-tags=docker"
+
+      - name: Perform CodeQL Analysis — Local Development
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}:local"
