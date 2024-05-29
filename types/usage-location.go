@@ -1,74 +1,125 @@
 package types
 
-// UsageLocation contains the UsageLocationBaseData as well as further
-// information about a single usage location.
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
 type UsageLocation struct {
-	// Use the already defined UsageLocationBaseData
-	UsageLocationBaseData
+	// ID identifies the usage location in the database
+	ID pgtype.Int8 `json:"id,omitempty" db:"id"`
 
-	// BasinNumber contains the identification number of the basin used to
-	// access the water
-	BasinNumber *NumericKeyedName `json:"basinNo" db:"basin_no"`
+	// LocationNumber is the usage locations id issued by the cadenza database
+	LocationNumber *pgtype.Int8 `json:"no" db:"no"`
 
-	// County contains the name of the county the usage location is placed in
-	County *string `json:"county" db:"county"`
+	// SerialID enumerates the usage location inside water right
+	SerialID *pgtype.Text `json:"serial,omitempty" db:"serial"`
 
-	// EUSurveyArea contains the NUTS key used in EU surveys to identify a
-	// region
-	EUSurveyArea *NumericKeyedName `json:"euSurveyArea" db:"eu_survey_area"`
+	// WaterRightID shows which water right is associated with this usage
+	// location
+	WaterRightID pgtype.Int8 `json:"waterRight,omitempty" db:"water_right"`
 
-	// Field contains an identification about the field the usage location is
-	// placed in
-	Field *string `json:"field" db:"field"`
+	// LegalDepartment shows into which legal department this usage location falls
+	LegalDepartment pgtype.Text `json:"legalDepartment" db:"legal_department"`
 
-	// TODO: Extend description
-	GroundwaterVolume *string `json:"groundwaterVolume" db:"groundwater_volume"`
+	// Active shows if the usage location is currently used
+	Active *pgtype.Bool `json:"active,omitempty" db:"active"`
 
-	// TODO: Extend description
-	LegalScope *string `json:"legalScope" db:"legal_scope"`
+	// Real shows if the usage location actually exists or not
+	Real *pgtype.Bool `json:"real,omitempty" db:"real"`
 
-	// LocalSubDistrict contains the County's district name the
-	// usage location is placed in
-	LocalSubDistrict *string `json:"localSubDistrict" db:"local_sub_district"`
+	// Name either contains the usage locations name or a different descriptor
+	Name *pgtype.Text `json:"name,omitempty" db:"name"`
 
-	// MaintenanceAssociation contains the association responsible for
-	// maintaining the usage location
-	MaintenanceAssociation *NumericKeyedName `json:"maintenanceAssociation" db:"maintenance_association"`
+	// LegalPurpose contains the legal purpose for the usage location
+	LegalPurpose *[]string `json:"legalPurpose,omitempty" db:"legal_purpose"`
 
-	// MunicipalArea contains information about the municipal the usage location
-	// is places in
-	MunicipalArea *NumericKeyedName `json:"municipalArea" db:"municipal_area"`
+	// MapExcerpt contains the identification of the area the location is in on
+	// a topological map using a 1:25000 scale
+	MapExcerpt *NumericKeyedValue `json:"mapExcerpt,omitempty" db:"map_excerpt"`
 
-	// TODO: Extend description
-	Plot *string `json:"plot" db:"plot"`
+	// MunicipalArea contains the ARS of the municipal and the name in which
+	// this usage location is located
+	MunicipalArea *NumericKeyedValue `json:"municipalArea,omitempty" db:"municipal_area"`
 
-	// TODO: Extend description
-	Rivershed *string `json:"rivershed" db:"rivershed"`
+	// County contains the name of the county the usage location is located in
+	County *pgtype.Text `json:"county,omitempty" db:"county"`
 
-	// SerialNumber contains a string identifying the usage location
-	SerialNumber *string `json:"serialNumber" db:"serial_no"`
+	// LandRecord contains information about the parish the usage location is
+	// located in
+	LandRecord *LandRecord `json:"landRecord,omitempty" db:"land_record"`
 
-	// TODO: Extend description
-	TopMap1To25000 *NumericKeyedName `json:"topMap1To25000" db:"top_map_1_25000"`
+	// Plot contains information about the plot the usage location is located
+	// in
+	Plot *pgtype.Text `json:"plot,omitempty" db:"plot"`
 
-	// TODO: Extend description
-	WaterBody *string `json:"waterBody" db:"water_body"`
+	// MaintenanceAssociation contains information about the (legal) person
+	// responsible for maintaining the usage location
+	MaintenanceAssociation *NumericKeyedValue `json:"maintenanceAssociation,omitempty" db:"maintenance_association"`
 
-	// TODO: Extend description
-	FloodArea *string `json:"floodArea" db:"flood_area"`
+	// EUSurveyArea contains information about an EU-specified survey area
+	EUSurveyArea *NumericKeyedValue `json:"euSurveyArea,omitempty" db:"eu_survey_area"`
 
-	// TODO: Extend description
-	WaterProtectionArea *string `json:"waterProtectionArea" db:"water_protection_area"`
+	// CatchmentAreaCode contains further information about the area the usage
+	// location is located in
+	CatchmentAreaCode *NumericKeyedValue `json:"catchmentAreaCode,omitempty" db:"catchment_area_code"`
 
-	// TODO: Extend description
-	WithdrawalRate *IntervalRates `json:"withdrawalRates" db:"withdrawal_rate"`
+	// RegulationCitation contains a citation from the regulations about water
+	// rights
+	RegulationCitation *pgtype.Text `json:"regulationCitation,omitempty" db:"regulation_citation"`
 
-	// TODO: Extend description
-	FluidDischarge *IntervalRates `json:"fluidDischargeRates" db:"fluid_discharge"`
+	// WithdrawalRates contains information about the rates of water withdrawal
+	// that are reflected by the associated water right
+	WithdrawalRates []Rate `json:"withdrawalRates,omitempty" db:"withdrawal_rates"`
 
-	// TODO: Extend description
-	IrrigationArea *Rate `json:"irrigationArea" db:"irrigation_area"`
+	// PumpingRates contains information about the allowed pumping rates for the
+	// usage location
+	PumpingRates []Rate `json:"pumpingRates,omitempty" db:"pumping_rates"`
 
-	// TODO: Extend description
-	RainSupplement *IntervalRates `json:"rainSupplement" db:"rain_supplement"`
+	// InjectionRates contains information about the allowed rates for
+	// injecting something at the usage location
+	InjectionRates []Rate `json:"injectionRates,omitempty" db:"injection_rates"`
+
+	// WasteWaterFlowVolume contains information about the amount of waste water
+	// handled at that location
+	WasteWaterFlowVolume []Rate `json:"wasteWaterFlowVolume,omitempty" db:"waste_water_flow_volume"`
+
+	// RiverBasin describes the river used in connection with the location
+	RiverBasin *pgtype.Text `json:"riverBasin,omitempty" db:"river_basin"`
+
+	// GroundwaterBody describes the groundwater used at this location
+	GroundwaterBody *pgtype.Text `json:"groundwaterBody,omitempty" db:"groundwater_body"`
+
+	// WaterBody describes the water body used at this location
+	WaterBody *pgtype.Text `json:"waterBody,omitempty" db:"water_body"`
+
+	// FloodArea describes the area in which a flood may happen
+	FloodArea *pgtype.Text `json:"floodArea,omitempty" db:"flood_area"`
+
+	// WaterProtectionArea contains information about a possible water
+	// protection area
+	WaterProtectionArea *pgtype.Text `json:"waterProtectionArea,omitempty" db:"water_protection_area"`
+
+	// DamTargetLevels contains information about the levels that are to be
+	// expected at a dam
+	DamTargetLevels *DamTarget `json:"damTargetLevels,omitempty" db:"dam_target_levels"`
+
+	// FluidDischarge contains rates of discharged fluids
+	FluidDischarge []Rate `json:"fluidDischarge,omitempty" db:"fluid_discharge"`
+
+	// RainSupplement contains information about additionally used rain water
+	RainSupplement []Rate `json:"rainSupplement,omitempty" db:"rain_supplement"`
+
+	// IrrigationArea contains information about the area that the rain is
+	// collected from
+	IrrigationArea *Quantity `json:"irrigationArea,omitempty" db:"irrigation_area"`
+
+	// PHValues contains information about the ph values at the usage location
+	PHValues *pgtype.Range[pgtype.Numeric] `json:"phValues,omitempty" db:"ph_values"`
+
+	// InjectionLimits contains information about injection limitations
+	InjectionLimits []InjectionLimit `json:"injectionLimits,omitempty" db:"injection_limits"`
+
+	// Location contains the GeoJSON representation of the usage locations
+	// location
+	Location *Location `json:"location,omitempty" db:"location_ewkb"`
 }
