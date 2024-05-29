@@ -7,15 +7,15 @@ import (
 	"os/signal"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
-	errorHandler "github.com/wisdom-oss/microservice-middlewares/v5/error"
-	securityMiddlewares "github.com/wisdom-oss/microservice-middlewares/v5/security"
 	"golang.org/x/net/http2"
 
+	"github.com/wisdom-oss/service-water-rights/config"
 	"github.com/wisdom-oss/service-water-rights/globals"
 	"github.com/wisdom-oss/service-water-rights/routes"
+
+	securityMiddlewares "github.com/wisdom-oss/microservice-middlewares/v5/security"
 
 	"golang.org/x/net/http2/h2c"
 )
@@ -57,7 +57,7 @@ func main() {
 
 	// now start up the http server
 	go func() {
-		mainLogger.Info().Msg("starting http server")
+		mainLogger.Info().Msg("ready to accept requests")
 		if err := httpServer.ListenAndServe(); err != nil {
 			mainLogger.Fatal().Err(err).Msg("unable to start http server")
 		}
