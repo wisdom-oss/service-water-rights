@@ -20,6 +20,7 @@ import "github.com/jackc/pgx/v5/pgtype"
 //	}
 //	// rate represents a rate of 2 meters per hour.
 type Rate struct {
-	Quantity
-	Per *pgtype.Interval `json:"per,omitempty"`
+	Value *pgtype.Numeric  `json:"value,omitempty" db:"value"`
+	Unit  *pgtype.Text     `json:"unit,omitempty" db:"unit"`
+	Per   *pgtype.Interval `json:"per,omitempty"`
 }
