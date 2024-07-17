@@ -25,3 +25,8 @@ SELECT *, st_asewkb(st_transform(location, 4326)) AS location_ewkb
 FROM water_rights.usage_locations
 WHERE
     water_right = $1;
+
+-- name: get-withdrawal-rates
+SELECT withdrawal_rates
+FROM water_rights.usage_locations
+WHERE id IN (SELECT internal_id FROM water_rights.current_rights) AND st_within(st_transform(location, 4326), st_setsrid($1::geometry, 4326::integer)) AND withdrawal_rates is not NULL;

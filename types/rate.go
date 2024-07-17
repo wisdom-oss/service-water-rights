@@ -24,3 +24,36 @@ type Rate struct {
 	Unit  *pgtype.Text     `json:"unit,omitempty" db:"unit"`
 	Per   *pgtype.Interval `json:"per,omitempty"`
 }
+
+const (
+	microsecondsPerSecond int64 = 1000000
+	microsecondsPerMinute int64 = 60 * microsecondsPerSecond
+	microsecondsPerHour         = 60 * microsecondsPerMinute
+	microsecondsPerDay          = 24 * microsecondsPerHour
+	microsecondsPerMonth        = 30 * microsecondsPerDay
+	microsecondsPerYear         = 365 * microsecondsPerDay
+)
+
+const litrePerCubicMeter = 1000
+
+func (r Rate) CubicMeterPerYear() float64 {
+	f64, err := r.Value.Float64Value()
+	if err != nil {
+		return 0
+	}
+	amount := f64.Float64
+	totalMicros := r.Per.Microseconds + int64(r.Per.Days)*microsecondsPerDay + int64(r.Per.Months)*microsecondsPerMonth
+
+	microRelation := float64(totalMicros) / float64(microsecondsPerYear)
+
+	yearlyAmount := amount / microRelation
+
+	switch r.Unit.String {
+	case "l":
+		return yearlyAmount / litrePerCubicMeter
+	case "m³":
+		return yearlyAmount
+	default:
+		return 0
+	}
+}

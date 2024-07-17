@@ -84,6 +84,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/twpayne/go-geom v1.5.4 h1:b8fiZd0SsEmQEeUdz2atT6KggF1KHiaZIi3DGi5p+sI=
 github.com/twpayne/go-geom v1.5.4/go.mod h1:Hw8RszQ2/d9Y/KfOm9CvUJo78BOoIA5g0e4P7JCVKvo=
+github.com/twpayne/pgx-geom v0.0.2 h1:DZcp66JfCwyfQMH1JNBa0vfF+/hi4WQsfHMqBRXp8WI=
+github.com/twpayne/pgx-geom v0.0.2/go.mod h1:rUjv/MgeOmPZqUbLY7Qgq56dAAHE28S7FZMFtXQMRoI=
 github.com/wisdom-oss/commonTypes v1.0.0 h1:+KuD3l+g1P6K2DwyC0nqo0RrpZdKiAoMLOBhQIce7WQ=
 github.com/wisdom-oss/commonTypes v1.0.0/go.mod h1:Q7X33dplhIdZxIbJRyTLhk9ojrDN6chq9D5xExToUEo=
 github.com/wisdom-oss/commonTypes/v2 v2.0.1 h1:TWW4j+MsXca9CgiN0INFi05os3rSzSNTQJhBfwXx0cQ=

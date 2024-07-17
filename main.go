@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
@@ -45,6 +46,10 @@ func main() {
 	router.
 		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
 		Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
+	router.
+		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
+		With(chiMiddleware.AllowContentEncoding("application/json")).
+		Post("/average-withdrawals", routes.WaterTakeout)
 
 	// now configure the http2c and the http server
 	http2Server := &http2.Server{}
