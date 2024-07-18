@@ -15,7 +15,7 @@ type WaterRight struct {
 	ID pgtype.Int8 `json:"id" db:"id"`
 
 	// WaterRightNumber represents the ID of the water right issued by the NLWKN
-	WaterRightNumber pgtype.Int8 `json:"water_right_number" db:"water_right_number"`
+	WaterRightNumber pgtype.Int8 `json:"waterRightNumber" db:"water_right_number"`
 
 	// Holder contains the holder's name for this water right
 	Holder *pgtype.Text `json:"holder" db:"holder"`
