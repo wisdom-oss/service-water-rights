@@ -1,6 +1,10 @@
 package types
 
-import "github.com/jackc/pgx/v5/pgtype"
+import (
+	"encoding/json"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 // Rate represents a rate quantity and its corresponding per interval.
 // The rate quantity is described by the `Quantity` struct, which consists of a
@@ -56,4 +60,19 @@ func (r Rate) CubicMeterPerYear() float64 {
 	default:
 		return 0
 	}
+}
+
+func (r Rate) MarshalJSON() ([]byte, error) {
+	type outputRate struct {
+		Value *pgtype.Numeric `json:"value,omitempty" db:"value"`
+		Unit  *pgtype.Text    `json:"unit,omitempty" db:"unit"`
+		Per   int64           `json:"per,omitempty"`
+	}
+	totalMicros := r.Per.Microseconds + int64(r.Per.Days)*microsecondsPerDay + int64(r.Per.Months)*microsecondsPerMonth
+	or := outputRate{
+		Value: r.Value,
+		Unit:  r.Unit,
+		Per:   totalMicros,
+	}
+	return json.Marshal(or)
 }
