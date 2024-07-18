@@ -106,7 +106,7 @@ type UsageLocation struct {
 	// FluidDischarge contains rates of discharged fluids
 	FluidDischarge []Rate `json:"fluidDischarge,omitempty" db:"fluid_discharge"`
 
-	// RainSupplement contains information about additionally used rain water
+	// RainSupplement contains information about additionally used rainwater
 	RainSupplement []Rate `json:"rainSupplement,omitempty" db:"rain_supplement"`
 
 	// IrrigationArea contains information about the area that the rain is
