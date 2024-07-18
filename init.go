@@ -16,8 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 
-	"github.com/twpayne/pgx-geom"
-
 	"github.com/wisdom-oss/service-water-rights/config"
 	"github.com/wisdom-oss/service-water-rights/globals"
 )
@@ -170,10 +168,6 @@ func loadPreparedQueries() {
 // If any error occurs during the process, it logs an error and returns
 // the error. Otherwise, it returns nil.
 func registerCustomTypes(ctx context.Context, conn *pgx.Conn) error {
-	err := pgxgeom.Register(ctx, conn)
-	if err != nil {
-		return err
-	}
 	for _, customTypeName := range customTypes {
 		// create the array version of the type
 		customTypeArray := fmt.Sprintf("%s[]", customTypeName)
