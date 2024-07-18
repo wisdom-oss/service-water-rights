@@ -29,4 +29,4 @@ WHERE
 -- name: get-withdrawal-rates
 SELECT withdrawal_rates
 FROM water_rights.usage_locations
-WHERE id IN (SELECT internal_id FROM water_rights.current_rights) AND st_within(st_transform(location, 4326), st_setsrid($1::geometry, 4326::integer)) AND withdrawal_rates is not NULL;
+WHERE id IN (SELECT internal_id FROM water_rights.current_rights) AND st_within(st_transform(location, 4326), st_transform(st_geomfromgeojson($1::text), 4326::integer)) AND withdrawal_rates is not NULL;

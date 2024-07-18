@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/encoding/geojson"
 	wisdomType "github.com/wisdom-oss/commonTypes/v2"
 	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
@@ -35,16 +34,6 @@ func WaterTakeout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var geoms []geom.T
-	for _, inputGeom := range inputGeometries {
-		geometry, err := inputGeom.Decode()
-		if err != nil {
-			errorHandler <- fmt.Errorf("unable to convert geojson geometry to native type: %w", err)
-			return
-		}
-		geoms = append(geoms, geometry)
-	}
-
 	query, err := globals.SqlQueries.Raw("get-withdrawal-rates")
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to get query: %w", err)
@@ -52,9 +41,10 @@ func WaterTakeout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var withdrawalRates [][]types.Rate
-	for _, geometry := range geoms {
+	for _, geometry := range inputGeometries {
 		var rates [][]types.Rate
-		err = pgxscan.Select(r.Context(), globals.Db, &rates, query, geometry)
+		textGeom, _ := json.Marshal(geometry)
+		err = pgxscan.Select(r.Context(), globals.Db, &rates, query, textGeom)
 		if err != nil {
 			errorHandler <- fmt.Errorf("unable to query withdrawal rates: %w", err)
 			return
