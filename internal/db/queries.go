@@ -23,7 +23,11 @@ func LoadQueries() error {
 
 	dotSqls := make([]*dotsql.DotSql, len(queryFiles))
 	for idx, queryFile := range queryFiles {
-		instance, err := dotsql.LoadFromFile(queryFile.Name())
+		f, err := resources.QueryFiles.Open(queryFile.Name())
+		if err != nil {
+			return err
+		}
+		instance, err := dotsql.Load(f)
 		if err != nil {
 			return err
 		}
