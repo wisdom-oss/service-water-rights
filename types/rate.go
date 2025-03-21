@@ -1,6 +1,10 @@
 package types
 
-import "github.com/jackc/pgx/v5/pgtype"
+import (
+	"encoding/json"
+
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 // Rate represents a rate quantity and its corresponding per interval.
 // The rate quantity is described by the `Quantity` struct, which consists of a
@@ -23,4 +27,51 @@ type Rate struct {
 	Value *pgtype.Numeric  `db:"value"           json:"value,omitempty"`
 	Unit  *pgtype.Text     `db:"unit"            json:"unit,omitempty"`
 	Per   *pgtype.Interval `json:"per,omitempty"`
+}
+
+const litrePerCubicMeter = 1000
+const (
+	microsecondsPerSecond int64 = 1000000
+	microsecondsPerMinute int64 = 60 * microsecondsPerSecond
+	microsecondsPerHour         = 60 * microsecondsPerMinute
+	microsecondsPerDay          = 24 * microsecondsPerHour
+	microsecondsPerMonth        = 30 * microsecondsPerDay
+	microsecondsPerYear         = 365 * microsecondsPerDay
+)
+
+func (r Rate) CubicMeterPerYear() float64 {
+	f64, err := r.Value.Float64Value()
+	if err != nil {
+		return 0
+	}
+	amount := f64.Float64
+	totalMicros := r.Per.Microseconds + int64(r.Per.Days)*microsecondsPerDay + int64(r.Per.Months)*microsecondsPerMonth
+
+	microRelation := float64(totalMicros) / float64(microsecondsPerYear)
+
+	yearlyAmount := amount / microRelation
+
+	switch r.Unit.String {
+	case "l":
+		return yearlyAmount / litrePerCubicMeter
+	case "m³":
+		return yearlyAmount
+	default:
+		return 0
+	}
+}
+
+func (r Rate) MarshalJSON() ([]byte, error) {
+	type outputRate struct {
+		Value *pgtype.Numeric `db:"value"           json:"value,omitempty"`
+		Unit  *pgtype.Text    `db:"unit"            json:"unit,omitempty"`
+		Per   int64           `json:"per,omitempty"`
+	}
+	totalMicros := r.Per.Microseconds + int64(r.Per.Days)*microsecondsPerDay + int64(r.Per.Months)*microsecondsPerMonth
+	or := outputRate{
+		Value: r.Value,
+		Unit:  r.Unit,
+		Per:   totalMicros,
+	}
+	return json.Marshal(or)
 }
