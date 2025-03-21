@@ -10,6 +10,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/qustavo/dotsql v1.2.0
 	github.com/stretchr/testify v1.10.0
+	github.com/twpayne/go-geom v1.6.0
 	github.com/wisdom-oss/common-go/v3 v3.1.3
 	openapi.tanna.dev/go/validator v0.4.0
 
