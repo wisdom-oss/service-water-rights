@@ -1,3 +1,3 @@
 package internal
 
-const ServiceName = "microservice-template"
+const ServiceName = "water-rights"
