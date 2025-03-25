@@ -47,10 +47,11 @@ func CalculateWaterWithdrawal(c *gin.Context) {
 				errormutex.Lock()
 				errors = append(errors, err)
 				errormutex.Unlock()
+				return
 			}
 
 			ratemutex.Lock()
-			rates = append(rates, rates...)
+			rates = append(rates, shapeRates...)
 			ratemutex.Unlock()
 		}(geometry)
 	}
