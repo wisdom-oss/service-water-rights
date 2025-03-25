@@ -12,60 +12,60 @@ import "github.com/jackc/pgx/v5/pgtype"
 // any legal departments associated with the right, and other annotations.
 type WaterRight struct {
 	// ID represents the ID issued for this water right by the database
-	ID pgtype.Int8 `json:"id" db:"id"`
+	ID pgtype.Int8 `db:"id" json:"id"`
 
 	// WaterRightNumber represents the ID of the water right issued by the NLWKN
-	WaterRightNumber pgtype.Int8 `json:"water_right_number" db:"water_right_number"`
+	WaterRightNumber pgtype.Int8 `db:"water_right_number" json:"water_right_number"`
 
 	// Holder contains the holder's name for this water right
-	Holder *pgtype.Text `json:"holder" db:"holder"`
+	Holder *pgtype.Text `db:"holder" json:"holder"`
 
 	// ValidFrom contains the date from which on the water right is valid
-	ValidFrom *pgtype.Date `json:"validFrom" db:"valid_from"`
+	ValidFrom *pgtype.Date `db:"valid_from" json:"validFrom"`
 
 	// ValidUntil contains the date until the water right is valid and may be
 	// used
-	ValidUntil *pgtype.Date `json:"validUntil" db:"valid_until"`
+	ValidUntil *pgtype.Date `db:"valid_until" json:"validUntil"`
 
 	// Status contains a textual description of the water rights state
-	Status *pgtype.Text `json:"status" db:"status"`
+	Status *pgtype.Text `db:"status" json:"status"`
 
 	// LegalTitle contains information about the title issued for the water
 	// right
-	LegalTitle *pgtype.Text `json:"legalTitle" db:"legal_title"`
+	LegalTitle *pgtype.Text `db:"legal_title" json:"legalTitle"`
 
 	// WaterAuthority contains the name of the water authority responsible for
 	// the water right
-	WaterAuthority *pgtype.Text `json:"waterAuthority" db:"water_authority"`
+	WaterAuthority *pgtype.Text `db:"water_authority" json:"waterAuthority"`
 
 	// RegisteringAuthority contains the name of the authority that the water
 	// right has been registered with
-	RegisteringAuthority *pgtype.Text `json:"registeringAuthority" db:"registering_authority"`
+	RegisteringAuthority *pgtype.Text `db:"registering_authority" json:"registeringAuthority"`
 
 	// GrantingAuthority contains the name of the authority that granted the
 	// water right
-	GrantingAuthority *pgtype.Text `json:"grantingAuthority" db:"granting_authority"`
+	GrantingAuthority *pgtype.Text `db:"granting_authority" json:"grantingAuthority"`
 
 	// InitiallyGranted contains the date at which the water right has been granted
 	// for the first time
-	InitiallyGranted *pgtype.Date `json:"initiallyGranted" db:"initially_granted"`
+	InitiallyGranted *pgtype.Date `db:"initially_granted" json:"initiallyGranted"`
 
 	// LastChange contains the date at which the water right has been changed
 	// for the last time
-	LastChange *pgtype.Date `json:"lastChange" db:"last_change"`
+	LastChange *pgtype.Date `db:"last_change" json:"lastChange"`
 
 	// FileReference contains the reference to the water right application
-	FileReference *pgtype.Text `json:"fileReference" db:"file_reference"`
+	FileReference *pgtype.Text `db:"file_reference" json:"fileReference"`
 
 	// ExternalIdentifier contains an external identifier assigned by the
 	// RegisteringAuthority
-	ExternalIdentifier *pgtype.Text `json:"externalIdentifier" db:"external_identifier"`
+	ExternalIdentifier *pgtype.Text `db:"external_identifier" json:"externalIdentifier"`
 
 	// Subject contains the subject of the water right
-	Subject *pgtype.Text `json:"subject" db:"subject"`
+	Subject *pgtype.Text `db:"subject" json:"subject"`
 
 	// Address contains the address of the RightsHolder
-	Address *pgtype.Text `json:"address" db:"address"`
+	Address *pgtype.Text `db:"address" json:"address"`
 
 	// LegalDepartments contains the identifiers for the legal departments the
 	// water right has been assigned to.
@@ -79,8 +79,8 @@ type WaterRight struct {
 	//   * F: Other uses and impacts on groundwater
 	//   * K: Compulsory rights
 	//   * L: Fishing Rights
-	LegalDepartments []string `json:"legalDepartments" db:"legal_departments"`
+	LegalDepartments []string `db:"legal_departments" json:"legalDepartments"`
 
 	// Annotation contains other annotations for the water right
-	Annotation *pgtype.Text `json:"annotation" db:"annotation"`
+	Annotation *pgtype.Text `db:"annotation" json:"annotation"`
 }
