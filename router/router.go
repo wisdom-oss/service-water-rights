@@ -30,7 +30,7 @@ func Configure() (*gin.Engine, error) {
 	{
 		v1.GET("/", v1Routes.Locations)
 		v1.GET("/details/:nlwkn-water-right-id", v1Routes.WaterRightDetails)
-		v1.GET("/average-withdrawals", v1Routes.CalculateWaterWithdrawal)
+		v1.POST("/average-withdrawals", v1Routes.CalculateWaterWithdrawal)
 	}
 
 	return r, nil
