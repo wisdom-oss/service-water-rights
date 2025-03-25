@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/wisdom-oss/common-go/v3/middleware/gin/jwt"
 
@@ -21,7 +20,6 @@ func Configure() (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Use(gzip.Gzip(gzip.BestCompression))
 
 	scopeRequirer := jwt.ScopeRequirer{}
 	scopeRequirer.Configure(internal.ServiceName)
