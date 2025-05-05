@@ -15,8 +15,6 @@ import (
 	"github.com/wisdom-oss/service-water-rights/globals"
 	"github.com/wisdom-oss/service-water-rights/routes"
 
-	securityMiddlewares "github.com/wisdom-oss/microservice-middlewares/v5/security"
-
 	"golang.org/x/net/http2/h2c"
 )
 
@@ -40,10 +38,8 @@ func main() {
 
 	// now add the routes and their path specifications to the router
 	router.
-		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
 		Get("/", routes.UsageLocations)
 	router.
-		With(securityMiddlewares.RequireScope(globals.ServiceName, securityMiddlewares.ScopeRead)).
 		Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 
 	// now configure the http2c and the http server
