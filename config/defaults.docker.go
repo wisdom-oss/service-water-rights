@@ -9,7 +9,6 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	errorMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/error"
-	securityMiddleware "github.com/wisdom-oss/microservice-middlewares/v5/security"
 
 	"github.com/wisdom-oss/service-water-rights/globals"
 )
@@ -30,7 +29,6 @@ var Middlewares = []func(next http.Handler) http.Handler{
 	chiMiddleware.RequestID,
 	chiMiddleware.RealIP,
 	errorMiddleware.Handler,
-	securityMiddleware.ValidateServiceJWT,
 }
 
 // EnvironmentFilePath contains the default file path under which the
