@@ -142,7 +142,7 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", buf.Len()))
+	w.Header().Set("X-Content-Length", fmt.Sprintf("%d", buf.Len()))
 	w.WriteHeader(200)
 
 	_, _ = io.Copy(w, &buf)
