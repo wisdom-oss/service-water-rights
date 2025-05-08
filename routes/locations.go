@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -136,14 +135,14 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var buf bytes.Buffer
-	err = json.NewEncoder(w).Encode(locations)
+	err = json.NewEncoder(&buf).Encode(locations)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to return response: %w", err)
 		return
 	}
 
-	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
-	w.WriteHeader(200)
+	buf.Available()
 
-	_, _ = io.Copy(w, &buf)
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
+	w.Write(buf.Bytes())
 }
