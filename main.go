@@ -9,13 +9,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/net/http2"
 
 	"github.com/wisdom-oss/service-water-rights/config"
 	"github.com/wisdom-oss/service-water-rights/globals"
 	"github.com/wisdom-oss/service-water-rights/routes"
-
-	"golang.org/x/net/http2/h2c"
 )
 
 // the main function bootstraps the http server and handlers used for this
@@ -43,10 +40,9 @@ func main() {
 		Get("/details/{water-right-nlwkn-id}", routes.SingleWaterRight)
 
 	// now configure the http2c and the http server
-	http2Server := &http2.Server{}
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.ListenAddress, globals.Environment["LISTEN_PORT"]),
-		Handler: h2c.NewHandler(router, http2Server),
+		Handler: router,
 	}
 
 	// now setup some signal handling to allow stopping the service gracefully

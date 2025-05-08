@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -132,9 +133,16 @@ func UsageLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(locations)
+
+	var buf bytes.Buffer
+	err = json.NewEncoder(&buf).Encode(locations)
 	if err != nil {
 		errorHandler <- fmt.Errorf("unable to return response: %w", err)
 		return
 	}
+
+	buf.Available()
+
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
+	w.Write(buf.Bytes())
 }
