@@ -7,7 +7,7 @@ FROM water_rights.rights;
 SELECT internal_id
 FROM water_rights.current_rights
 WHERE
-    water_right_number = $1;
+    water_right_number = $1 OR internal_id = $1;
 
 -- name: get-water-right
 SELECT *
