@@ -56,11 +56,11 @@ func main() {
 
 	c := configuration.Default.Viper()
 
-	// now configure the http2c and the http server
-	http2Server := &http2.Server{}
-	httpServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", config.ListenAddress, globals.Environment["LISTEN_PORT"]),
-		Handler: h2c.NewHandler(router, http2Server),
+	// create a http server to handle the requests
+	server := http.Server{
+		Addr:              net.JoinHostPort(c.GetString(configuration.ConfigurationKey_HttpHost), c.GetString(configuration.ConfigurationKey_HttpPort)), //nolint:lll
+		Handler:           r.Handler(),
+		ReadHeaderTimeout: headerReadTimeout,
 	}
 
 	// Start the server and log errors that happen while running it
