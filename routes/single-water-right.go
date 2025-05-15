@@ -136,7 +136,7 @@ func SingleWaterRight(w http.ResponseWriter, r *http.Request) {
 		errorHandler <- fmt.Errorf("unable to write data to multipart field for usage locations: %w", err)
 		return
 	}
-
+	multipartWriter.Close()
 	_, _ = io.Copy(w, &outputBuf)
 
 }
