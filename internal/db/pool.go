@@ -6,13 +6,26 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	pgxgeom "github.com/twpayne/pgx-geom"
 
 	"microservice/internal/configuration"
 )
 
 // This file contains the connection to the database which is automatically
 // initialized on import/app startup
+
+var customTypes = []string{
+	"water_rights.numeric_keyed_value",
+	"water_rights.quantity",
+	"water_rights.rate",
+	"water_rights.dam_target",
+	"water_rights.land_record",
+	"water_rights.legal_department",
+	"water_rights.injection_limit",
+}
 
 // Pool is not initialized at the app startup and needs to be initiatized by
 // calling [Connect].
@@ -67,6 +80,31 @@ func Connect() (err error) {
 	pgConfig, err := pgxpool.ParseConfig(connectionString)
 	if err != nil {
 		return fmt.Errorf("unable to parse database configuration string: %w", err)
+	}
+
+	pgConfig.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+		err := pgxgeom.Register(ctx, c)
+		if err != nil {
+			return err
+		}
+		for _, customTypeName := range customTypes {
+			// create the array version of the type
+			customTypeArray := customTypeName + "[]"
+			// now load the custom type from the database
+			customType, err := c.LoadType(ctx, customTypeName)
+			if err != nil {
+				return err
+			}
+			c.TypeMap().RegisterType(customType)
+
+			// now load the array version of the type
+			customType, err = c.LoadType(ctx, customTypeArray)
+			if err != nil {
+				return err
+			}
+			c.TypeMap().RegisterType(customType)
+		}
+		return nil
 	}
 
 	slog.Debug("initializing database pool with connection string", "connString", connectionString)
