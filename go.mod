@@ -6,7 +6,9 @@ toolchain go1.24.2
 
 require (
 	github.com/dr4hcu5-jan/viper-vault v0.1.0
+	github.com/georgysavva/scany/v2 v2.1.4
 	github.com/getkin/kin-openapi v0.132.0
+	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-contrib/requestid v1.0.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/hashicorp/vault/api v1.16.0
@@ -20,7 +22,9 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/thanhpk/randstr v1.0.6
 	github.com/twpayne/go-geom v1.5.4
+	github.com/twpayne/pgx-geom v0.0.2
 	github.com/wisdom-oss/common-go/v3 v3.2.1
+	github.com/wroge/wgs84/v2 v2.0.0-alpha.13
 	openapi.tanna.dev/go/validator v0.4.1
 
 )
