@@ -47,6 +47,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// setting up the database connection
+	err = db.LoadQueries()
+	if err != nil {
+		slog.Error("unable to load the database queries", "error", err)
+		os.Exit(1)
+	}
+
 	// configure your router
 	r, err := router.Configure()
 	if err != nil {
