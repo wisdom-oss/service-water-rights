@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"github.com/thanhpk/randstr"
@@ -38,7 +39,7 @@ func prepareRouter() *gin.Engine {
 	r.HandleMethodNotAllowed = true
 	r.UseH2C = true
 	r.RedirectFixedPath = true
-
+	r.Use(gzip.Gzip(gzip.BestCompression))
 	r.Use(errorHandler.Handler)
 	r.Use(gin.CustomRecovery(recoverer.RecoveryHandler))
 	r.Use(requestid.New(
