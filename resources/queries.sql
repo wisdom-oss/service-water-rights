@@ -16,12 +16,12 @@ WHERE
     id = $1;
 
 -- name: get-locations
-SELECT *, st_asewkb(st_transform(location, 4326)) AS location_ewkb
+SELECT *
 FROM water_rights.usage_locations;
 
 
 -- name: get-water-right-usage-locations
-SELECT *, st_asewkb(st_transform(location, 4326)) AS location_ewkb
+SELECT *
 FROM water_rights.usage_locations
 WHERE
     water_right = $1;
