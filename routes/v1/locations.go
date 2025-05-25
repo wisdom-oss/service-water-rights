@@ -51,11 +51,9 @@ locations:
 
 			for _, requestedKey := range queryParams.MunicipalityKeys {
 				cleanedKey := fmt.Sprintf("0%d", location.MunicipalArea.Key.Int)
-				fmt.Println(cleanedKey, requestedKey, len(cleanedKey)-len(requestedKey))
 				if !strings.HasPrefix(cleanedKey, requestedKey) {
 					continue locations
 				}
-				fmt.Println("match found", cleanedKey, requestedKey, len(cleanedKey)-len(requestedKey))
 			}
 		}
 
