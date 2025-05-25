@@ -5,6 +5,7 @@ import (
 
 	internal "microservice/internal/router"
 	v1Routes "microservice/routes/v1"
+	v2Routes "microservice/routes/v2"
 )
 
 // Configure generates a new router and adds routes to the router
@@ -22,6 +23,14 @@ func Configure() (*gin.Engine, error) {
 	v1 := r.Group("/v1")
 	{
 		v1.GET("/", v1Routes.UsageLocations)
+		v1.GET("/details/:id", v1Routes.WaterRightDetails)
+
+	}
+
+	v2 := r.Group("/v2")
+	{
+		v2.GET("/", v2Routes.UsageLocations)
+		v2.GET("/water-right-details/:id", v2Routes.WaterRightDetails)
 	}
 
 	return r, nil
