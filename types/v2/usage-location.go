@@ -52,23 +52,23 @@ type UsageLocation struct {
 }
 
 func (l UsageLocation) EPSG4326Geom() geom.T {
-	if l.Geometry.SRID() == 4326 {
+	if l.Geometry.SRID() == defaultCRS {
 		return l.Geometry
 	}
 	geom.TransformInPlace(l.Geometry, func(c geom.Coord) {
-		transformer := wgs84.Transform(wgs84.EPSG(25832), wgs84.EPSG(4326))
+		transformer := wgs84.Transform(wgs84.EPSG(l.Geometry.SRID()), wgs84.EPSG(defaultCRS))
 
 		lat, long, _ := transformer(c.X(), c.Y(), 0)
 
 		newCoords := geom.Coord{lat, long}
 		c.Set(newCoords)
 	})
-	geom.SetSRID(l.Geometry, 4326)
+	l.Geometry, _ = geom.SetSRID(l.Geometry, defaultCRS)
 	return l.Geometry
 }
 
 func (l UsageLocation) ToFeature() (*geojson.Feature, error) {
-	if l.Geometry.SRID() != 4326 {
+	if l.Geometry.SRID() != defaultCRS {
 		l.EPSG4326Geom()
 	}
 

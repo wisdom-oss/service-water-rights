@@ -9,7 +9,7 @@ import (
 	"github.com/wroge/wgs84/v2"
 )
 
-type UsageLocation struct {
+type UsageLocation struct { //nolint:dupl
 	// ID identifies the usage location in the database
 	ID pgtype.Int8 `db:"id" json:"id,omitempty"`
 
@@ -129,7 +129,7 @@ type UsageLocation struct {
 	Location geom.T `db:"location" json:"location"`
 }
 
-type usageLocation struct {
+type usageLocation struct { //nolint:dupl
 	// ID identifies the usage location in the database
 	ID pgtype.Int8 `db:"id" json:"id,omitempty"`
 
@@ -288,7 +288,7 @@ func (l UsageLocation) MarshalJSON() ([]byte, error) {
 	}
 
 	geom.TransformInPlace(l.Location, func(c geom.Coord) {
-		transformer := wgs84.Transform(wgs84.EPSG(25832), wgs84.EPSG(4326))
+		transformer := wgs84.Transform(wgs84.EPSG(l.Location.SRID()), wgs84.EPSG(4326)) //nolint:mnd
 
 		lat, long, _ := transformer(c.X(), c.Y(), 0)
 
@@ -296,6 +296,6 @@ func (l UsageLocation) MarshalJSON() ([]byte, error) {
 		c.Set(newCoords)
 	})
 
-	out.Location, _ = geojson.Marshal(l.Location, geojson.EncodeGeometryWithMaxDecimalDigits(15))
+	out.Location, _ = geojson.Marshal(l.Location, geojson.EncodeGeometryWithMaxDecimalDigits(15)) //nolint:mnd
 	return json.Marshal(out)
 }
