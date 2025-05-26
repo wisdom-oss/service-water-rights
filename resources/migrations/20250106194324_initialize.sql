@@ -1,14 +1,7 @@
-/*
- This file contains all queries needed to initialize the database for using this
- microservice.
- The queries are safe if the initialization already ran once as the queries
- handle duplicate items by themselves.
- */
-
--- name: 01
+-- +goose Up
+-- +goose StatementBegin
 CREATE SCHEMA IF NOT EXISTS water_rights;
 
--- name: 02
 DO
 $$
     BEGIN
@@ -22,7 +15,6 @@ $$
     END
 $$;
 
--- name: 03
 DO
 $$
     BEGIN
@@ -36,7 +28,6 @@ $$
     END
 $$;
 
--- name: 04
 DO
 $$
     BEGIN
@@ -51,7 +42,6 @@ $$
     END
 $$;
 
--- name: 04
 DO
 $$
     BEGIN
@@ -66,7 +56,6 @@ $$
     END
 $$;
 
--- name: 05
 DO
 $$
     BEGIN
@@ -83,7 +72,6 @@ $$
     END;
 $$;
 
--- name: 07
 DO
 $$
     BEGIN
@@ -97,7 +85,6 @@ $$
     END;
 $$;
 
--- name: 08
 DO
 $$
     BEGIN
@@ -117,7 +104,6 @@ $$
     END;
 $$;
 
--- name: 09
 CREATE TABLE IF NOT EXISTS water_rights.rights
 (
     -- id is the internally used id that is automatically created for each water
@@ -144,7 +130,6 @@ CREATE TABLE IF NOT EXISTS water_rights.rights
     annotation            text                            DEFAULT NULL
 );
 
--- name: 10
 CREATE TABLE IF NOT EXISTS water_rights.usage_locations
 (
     id                      bigserial PRIMARY KEY,
@@ -185,10 +170,10 @@ CREATE TABLE IF NOT EXISTS water_rights.usage_locations
     location                geometry('point', 25832)         DEFAULT NULL
 );
 
--- name: 11
 CREATE TABLE IF NOT EXISTS water_rights.current_rights
 (
     water_right_number int8 NOT NULL PRIMARY KEY,
     internal_id        int8,
     deleted            timestamptz DEFAULT NULL
 );
+-- +goose StatementEnd

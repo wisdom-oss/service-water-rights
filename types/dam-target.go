@@ -10,7 +10,7 @@ package types
 //   - Value: the numeric value of the target
 //   - Unit: the unit of measurement for the target value
 type DamTarget struct {
-	Default *Quantity `json:"default,omitempty"`
-	Steady  *Quantity `json:"steady,omitempty"`
-	Max     *Quantity `json:"max,omitempty"`
+	Default *Quantity `db:"default" json:"default,omitempty"`
+	Steady  *Quantity `db:"steady"  json:"steady,omitempty"`
+	Max     *Quantity `db:"max"     json:"max,omitempty"`
 }
