@@ -65,8 +65,8 @@ locations:
 			}
 		}
 
-		if queryParams.Virtual != nil && location.Virtual != nil {
-			if *location.Virtual != !*queryParams.Virtual {
+		if queryParams.Virtual != nil && location.Real != nil {
+			if *location.Real != !*queryParams.Virtual {
 				continue
 			}
 		}
