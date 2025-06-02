@@ -50,7 +50,7 @@ func AverageWaterTakeout(c *gin.Context) {
 				return err
 			}
 
-			decodedGeometry, err = geom.SetSRID(decodedGeometry, 4326)
+			decodedGeometry, err = geom.SetSRID(decodedGeometry, 4326) //nolint:mnd
 			if err != nil {
 				return err
 			}
