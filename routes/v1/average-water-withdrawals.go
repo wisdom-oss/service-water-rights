@@ -1,9 +1,6 @@
 package v1
 
 import (
-	"microservice/globals"
-	"microservice/internal/db"
-	"microservice/types"
 	"net/http"
 	"slices"
 	"sync"
@@ -12,8 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/encoding/geojson"
-	wisdom "github.com/wisdom-oss/common-go/v3/types"
 	"golang.org/x/sync/errgroup"
+
+	wisdom "github.com/wisdom-oss/common-go/v3/types"
+
+	"microservice/globals"
+	"microservice/internal/db"
+	"microservice/types"
 )
 
 var (
