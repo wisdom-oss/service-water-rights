@@ -11,7 +11,7 @@ require (
 	github.com/gin-contrib/requestid v1.0.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-chrono/chrono v0.0.0-20250504201628-03217191950b
-	github.com/hashicorp/vault/api v1.16.0
+	github.com/hashicorp/vault/api v1.20.0
 	github.com/hashicorp/vault/api/auth/userpass v0.9.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgx/v5 v5.7.5
@@ -23,7 +23,7 @@ require (
 	github.com/twpayne/pgx-geom v0.0.2
 	github.com/wisdom-oss/common-go/v3 v3.2.1
 	github.com/wroge/wgs84/v2 v2.0.0-alpha.13
-
+	golang.org/x/sync v0.14.0
 )
 
 require (
@@ -78,7 +78,6 @@ require (
 	golang.org/x/arch v0.17.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
