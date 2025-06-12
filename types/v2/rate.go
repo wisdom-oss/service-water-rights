@@ -2,7 +2,6 @@ package v2
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/go-chrono/chrono"
@@ -38,6 +37,5 @@ func (r Rate) MarshalJSON() ([]byte, error) {
 	duration := chrono.DurationOf(chrono.Extent(r.Per.Microseconds * 1000)) //nolint:mnd
 
 	out.Per = chrono.FormatDuration(period, duration)
-	fmt.Println(out.Per)
 	return json.Marshal(out)
 }
