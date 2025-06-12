@@ -31,7 +31,7 @@ func (c *configuration) Initialize() error {
 
 	configurationType, set := os.LookupEnv(EnvConfigurationType)
 	if !set {
-		c.t = ConfigurationType_Local
+		configurationType = ConfigurationType_Local
 	}
 
 	switch configurationType {
