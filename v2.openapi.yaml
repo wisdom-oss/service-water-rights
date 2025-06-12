@@ -1,0 +1,338 @@
+openapi: 3.1.0
+info:
+  version: 2.0.0
+  title: Water Rights Service
+  description: |
+    This service allows reading crawled water right information via an API for
+    easier access than the official Cadenza software.
+
+    *Please note that the data output by the service is licensed under the*
+    Datenlizenz Deutschland – Namensnennung – Version 2.0 *and usage of the
+    data output via the API is still subject to this license. [Read more]*
+
+    [Read more]: www.nlwkn.niedersachsen.de/opendata
+
+servers:
+  - url: /api/water-rights/v2/
+    description: WISdoM Platform
+
+  - url: http://localhost:8000/v2/
+    description: Local Development Server
+
+components:
+  schemas:
+    LegalDepartment:
+      type: [string, "null"]
+      enum: [A,B,C,D,E,F,K,L]
+      description: |
+        The legal department the usage location is associated with
+
+        | **Letter** | **Description**                                                 |
+        | :--------- | :-------------------------------------------------------------- |
+        | A          | Withdrawal of water or solid substances from surface waters     |
+        | B          | Introduction and discharge of substances into surface waters    |
+        | C          | Damming and lowering of surface waters                          |
+        | D          | Other impacts on surface waters                                 |
+        | E          | Withdrawal, extraction, conveyance and discharge of groundwater |
+        | F          | Other uses and impacts on groundwater                           |
+        | K          | Compulsory rights                                               |
+        | L          | Fishing Rights                                                  |
+
+    Quantity:
+      type: [object, "null"]
+      properties:
+        value:
+          type: number
+        unit:
+          type: string
+
+    Rate:
+      allOf:
+        - $ref: '#/components/schemas/Quantity'
+        - properties:
+            per:
+              type: string
+              format: duration
+    
+    LandRecord:
+      type: [object, "null"]
+      properties:
+        district:
+          type: string
+        field:
+          type: integer
+        fallback:
+          type: string
+    
+    NumericKeyedName:
+      type: [object, "null"]
+      properties:
+        key: 
+          type: number
+        value:
+          type: string
+
+    InjectionLimit:
+      type: object
+      properties:
+        substance:
+          type: string
+        quantity:
+          $ref: "#/components/schemas/Quantity"
+
+    DamTarget:
+      type: object
+      properties:
+        default:
+          $ref: "#/components/schemas/Quantity"
+        steady:
+          $ref: "#/components/schemas/Quantity"
+        max:
+          $ref: "#/components/schemas/Quantity"
+
+    UsageLocationMetadata:
+      type: object
+      properties:
+        internalID:
+          type: integer
+        cadenzaID:
+          type: integer
+        waterRightID:
+          type: integer
+        serial:
+          type: [string, "null"]
+        isActive:
+          type: [boolean, "null"]
+        isVirtual:
+          type: [boolean, "null"]
+        name:
+          type: [string, "null"]
+        legalDepartment:
+          $ref: "#/components/schemas/LegalDepartment"
+        legalPurposes:
+          type: [array, "null"]
+          items:
+            type: string
+        mapExcerpt:
+          $ref: "#/components/schemas/NumericKeyedName"
+        municipalArea:
+          $ref: "#/components/schemas/NumericKeyedName"
+        county:
+          type: [string, "null"]
+        plot:
+          type: [string, "null"]
+        maintenance:
+          $ref: "#/components/schemas/NumericKeyedName"
+        surveyArea:
+          $ref: "#/components/schemas/NumericKeyedName"
+        catchmentArea:
+          $ref: "#/components/schemas/NumericKeyedName"
+        regulationCitation:
+          type: [string, "null"]
+        groundwaterBody:
+          type: [string, "null"]
+        waterBody:
+          type: [string, "null"]
+        floodArea:
+          type: [string, "null"]
+        waterProtectionArea:
+          type: [string, "null"]
+        riverBasin:
+          type: [string, "null"]
+        phValues:
+          type: object
+          properties:
+            lower:
+              type: number
+              format: float64
+            upper:
+              type: number
+              format: float64
+        injectionLimits:
+          type: [array, "null"]
+          items:
+            $ref: "#/components/schemas/InjectionLimit"
+        damTargetLevels:
+          $ref: "#/components/schemas/DamTarget"
+        rates:
+          type: object
+          properties:
+            withdrawal:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+            pumping:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+            injection:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+            wasteWaterFlow:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+            fluidDischarges:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+            rainSupplement:
+              type: [array, "null"]
+              items:
+                $ref: "#/components/schemas/Rate"
+
+    UsageLocationFeature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        id:
+          type: string
+        properties:
+          $ref: "#/components/schemas/UsageLocationMetadata"
+        geometry:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+            coordinates:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: number
+                format: float64
+        
+
+    WaterRight:
+      type: object
+      properties:
+        identifiers:
+          type: object
+          properties:
+            database:
+              type: integer
+              minimum: 0
+              format: uint64
+            cadenza:
+              type: integer
+              minimum: 0
+              format: uint64
+            external:
+              type: [string, "null"]
+            fileReference:
+              type: [string, "null"]
+        legalTitle:
+          type: [string, "null"]
+        holder:
+          type: [string, "null"]
+        status:
+          type: [string, "null"]
+        initiallyGranted:
+          type: [string, "null"]
+          format: date
+        lastChange:
+          type: [string, "null"]
+          format: date
+        subject:
+          type: [string, "null"]
+        address:
+          type: [string, "null"]
+        legalDepartments:
+          type: [array, "null"]
+          items:
+            $ref: "#/components/schemas/LegalDepartment"
+        annotation:
+          type: [string, "null"]
+        authorities:
+          type: object
+          properties:
+            water:
+              type: [string, "null"]
+            registering:
+              type: [string, "null"]
+            granting:
+              type: [string, "null"]
+        valid:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            until:
+              type: string
+              format: date
+        usageLocations:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - FeatureCollection
+            features:
+              type: array
+              items:
+                $ref: "#/components/schemas/UsageLocationFeature"
+        
+paths:
+  /:
+    get:
+      summary: Usage Locations
+      parameters:
+        - in: query
+          name: in
+          schema:
+            type: array
+            items:
+              type: string
+          
+        - in: query
+          name: active
+          schema:
+            type: boolean
+        
+        - in: query
+          name: virtual
+          schema:
+            type: boolean
+
+
+      responses:
+        "200":
+          description: "Usage Locations"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - FeatureCollection
+                  features:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UsageLocationFeature"
+
+  /water-right-details/{id}:
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+
+    get:
+      description: Water Right Details
+      responses:
+        "200":
+          description: "details of the water right"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterRight"

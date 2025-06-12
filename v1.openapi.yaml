@@ -1,27 +1,31 @@
 openapi: 3.1.0
 info:
+  version: 1.0.0
   title: Water Rights Service
   description: |
-    This service allows reading the crawled water right informations via a API
-  version: 2.0.0
+    This service allows reading crawled water right information via an API for
+    easier access than the official Cadenza software.
+
+    *Please note that the data output by the service is licensed under the*
+    Datenlizenz Deutschland – Namensnennung – Version 2.0 *and usage of the
+    data output via the API is still subject to this license. [Read more]*
+
+    [Read more]: www.nlwkn.niedersachsen.de/opendata
+
 servers:
-  - url: '/api/water-rights'
-    description: WISdoM
+  - url: /api/water-rights/v1/
+    description: WISdoM Platform
 
-  - url: 'http://localhost:8000'
-    description: Development
-
-tags:
-  - name: v1
-  - name: v2
+  - url: http://localhost:8000/v1/
+    description: Local Development Server
 
 components:
   schemas:
-    LegalDepartment:
+    LegalDepartment:  
       type: string
-      enum: [A, B, C, D, E, F, K, L]
+      enum: [A,B,C,D,E,F,K,L]
       description: |
-        The legal department the usage location is associated to
+        The legal department the usage location is associated with
 
         | **Letter** | **Description**                                                 |
         | :--------- | :-------------------------------------------------------------- |
@@ -33,7 +37,7 @@ components:
         | F          | Other uses and impacts on groundwater                           |
         | K          | Compulsory rights                                               |
         | L          | Fishing Rights                                                  |
-    
+
     Quantity:
       type: object
       properties:
@@ -48,8 +52,9 @@ components:
         - properties:
             per:
               type: number
-              description: Microseconds of the interval length
-    
+              minimum: 0
+              description: interval duration in microseconds
+
     LandRecord:
       type: object
       properties:
@@ -123,8 +128,6 @@ components:
             - description: |
                 the ARS and the name of the municipal the usage location is 
                 located in
-              externalDocs:
-                url: https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/Glossar/regionalschluessel.html
             - $ref: '#/components/schemas/NumericKeyedName'
         county:
           type: string
@@ -212,7 +215,6 @@ components:
         irrigationArea:
           $ref: '#/components/schemas/Quantity'
         phValues:
-          # TODO: Look at response and model
           type: object
         injectionLimits:
           type: array
@@ -277,84 +279,12 @@ components:
         annotation:
           type: string
 
-    PointGeometry:
-      type: object
-      required:
-        - type
-        - coordinates
-      properties:
-        type:
-          type: string
-          enum:
-            - Point
-        coordinates:
-          type: array
-          minItems: 2
-          maxItems: 3
-          items:
-            type: number
-      examples:
-        - type: "Point"
-          coordinates:
-            - 9.9333
-            - 54.6667
-            - 18
-
-    UsageLocationFeature:
-      type: object
-      required:
-        - type
-        - id
-        - geometry
-        - properties
-      properties:
-        type:
-          type: string
-          enum:
-            - Feature
-        id:
-          type: integer
-        geometry:
-          $ref: '#/components/schemas/PointGeometry'
-        properties:
-          $ref: '#/components/schemas/UsageLocationFeatureProperties'
-
-    UsageLocationFeatureProperties:
-      type: object
-      properties:
-        name:
-          type:
-            - string
-            - "null"
-          description: The name of the usage location
-        active:
-          type: boolean
-        virtual:
-          type: boolean
-        assoicatedWaterRight:
-          type: integer
-          description: The id of the associated water right
-        nlwknID:
-          type: integer
-          description: The usage locations id issued by the NLWKN
-        serial:
-          type: string
-          description: The serial for the water right (often used if a right is extended)
-        legalDepartment:
-          $ref: '#/components/schemas/LegalDepartment'
-        
-        
-        
-          
-
 paths:
-  /v1/:
+  /:
     get:
       summary: Usage Locations
-      tags:
-        - v1
       responses:
-        200:
+        "200":
           description: (Filtered) Usage Locations
           content:
             application/json:
@@ -362,24 +292,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UsageLocation'
-        204:
-          description: No Results for supplied filters
 
-  /v1/details/{waterRightNumber}:
+  /details/{water-right-id}:
     parameters:
       - in: path
-        name: waterRightNumber
+        name: water-right-id
         required: true
         schema:
           type: string
 
     get:
-      tags:
-        - v1
-
+      description: Water Right Details
       responses:
-        200:
-          description: Water Right and it's locations
+        "200":
+          description: Water Right Details
           content:
             multipart/form-data:
               schema:
@@ -394,86 +320,5 @@ paths:
               encoding:
                 water-right:
                   contentType: application/json
-                usage-locations:
+                usage-location:
                   contentType: application/json
-  
-
-
-  /v2/usage-locations:
-    parameters:
-      - in: query
-        name: subset
-        description: |
-          The subset of stations that should be returned.
-          Per default only current stations are returned if the query parameter
-          is missing.
-        required: false
-        allowEmptyValue: false
-        schema:
-          type: string
-          default: current
-          enum:
-            - all
-            - current
-            - old
-
-      - in: query
-        name: legalDepartment
-        description: |
-          The legal departments that should be returned in the response.
-          If the parameter is not used then all legal departments are returned.
-        required: false
-        allowEmptyValue: false
-        schema:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegalDepartment'
-
-      - in: query
-        name: active
-        description: Return only active usage locations
-        required: false
-        allowEmptyValue: false
-        schema:
-          type: boolean
-          default: true
-      
-      - in: query
-        name: virtual
-        description: Return only virtual usage locations
-        required: false
-        allowEmptyValue: false
-        schema:
-          type: boolean
-          default: false
-
-    get:
-      summary: Current Usage Locations
-      description: |
-        This API endpoint returns the current usage locations according to the
-        selected filters.
-
-        The filters are joined by an `OR` operation.
-      tags:
-        - v2
-
-      operationId: v2_get-usage-locations
-      responses:
-        200:
-          description: Test
-          content:
-            application/geo+json:
-              schema:
-                type: object
-                required:
-                  - type
-                  - features
-                properties:
-                  type:
-                    type: string
-                    enum:
-                      - FeatureCollection
-                  features:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UsageLocationFeature'
