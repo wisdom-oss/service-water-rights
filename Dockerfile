@@ -11,7 +11,7 @@ FROM scratch
 
 LABEL traefik.enable=true
 LABEL traefik.http.routers.water-rights.middlewares=water-rights
-LABEL traefik.http.routers.twater-rights.rule="PathPrefix(`/api/water-rights`) || PathPrefix(`/water-rights`)"
+LABEL traefik.http.routers.water-rights.rule="PathPrefix(`/api/water-rights`) || PathPrefix(`/water-rights`)"
 LABEL traefik.http.middlewares.water-rights.stripprefix.prefixes="/api/water-rights,/water-rights"
 
 ENV GIN_MODE=release
