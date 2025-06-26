@@ -13,7 +13,6 @@ import (
 
 	wisdom "github.com/wisdom-oss/common-go/v3/types"
 
-	"microservice/globals"
 	"microservice/internal/db"
 	"microservice/types"
 )
@@ -35,7 +34,7 @@ func AverageWaterTakeout(c *gin.Context) {
 		return
 	}
 
-	query, err := globals.SqlQueries.Raw("get-withdrawal-rates")
+	query, err := db.Queries.Raw("get-withdrawal-rates")
 	if err != nil {
 		c.Abort()
 		_ = c.Error(err)
