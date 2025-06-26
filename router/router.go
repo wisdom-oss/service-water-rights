@@ -25,6 +25,7 @@ func Configure() (*gin.Engine, error) {
 		v1.GET("/", v1Routes.UsageLocations)
 		v1.GET("/details/:id", v1Routes.WaterRightDetails)
 		v1.POST("/average-withdrawals", v1Routes.AverageWaterTakeout)
+		v1.GET("/average-withdrawals", v1Routes.AverageWaterTakeout)
 
 	}
 
