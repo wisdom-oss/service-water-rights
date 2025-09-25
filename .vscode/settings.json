@@ -9,5 +9,8 @@
     "Prettier-SQL.SQLFlavourOverride": "postgresql",
     "editor.suggest.showWords": false,
     "go.testTimeout": "300s",
-    "go.lintTool": "golangci-lint"
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fix"
+    ]
 }
